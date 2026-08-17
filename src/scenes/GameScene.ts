@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { createEnemy } from '../entities/createEnemy';
 import { createPlayer } from '../entities/createPlayer';
+import type { Player } from '../entities/createPlayer';
 import { MAP_HEIGHT, MAP_WIDTH } from '../game/constants';
 import { AchievementSystem } from '../game/Achievements';
 import { metaProgress } from '../game/MetaProgress';
@@ -17,10 +18,12 @@ import { UpgradeSystem } from '../systems/UpgradeSystem';
 import type { Upgrade } from '../systems/UpgradeSystem';
 import { WeaponSystem } from '../systems/WeaponSystem';
 import { GameHud } from '../ui/GameHud';
+import { GRIM, grimTextStyle } from '../ui/grimTheme';
 import { createArena } from '../world/createArena';
+import { createRogueTextures } from '../sprites/rogue';
 
 export class GameScene extends Phaser.Scene {
-    private player!: Phaser.GameObjects.Arc;
+    private player!: Player;
 
     private enemies!: Phaser.Physics.Arcade.Group;
 
@@ -80,6 +83,7 @@ export class GameScene extends Phaser.Scene {
         this.pendingUpgradeSelections = 0;
         this.completed = false;
         createArena(this);
+        createRogueTextures(this);
 
         this.player = createPlayer(this, MAP_WIDTH / 2, MAP_HEIGHT / 2, this.character);
         const enemy = createEnemy(this, MAP_WIDTH / 2 - 360, MAP_HEIGHT / 2);
@@ -210,9 +214,7 @@ export class GameScene extends Phaser.Scene {
 
         this.upgradeTitle = this.add
             .text(this.scale.width / 2, 150, i18n.t('upgrade.choose'), {
-                color: '#f8fafc',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '36px',
+                ...grimTextStyle(GRIM.text, '36px'),
             })
             .setOrigin(0.5)
             .setScrollFactor(0)
@@ -230,9 +232,7 @@ export class GameScene extends Phaser.Scene {
                 `${upgrade.name}\n${i18n.t(`rarity.${upgrade.rarity.id}`)}\n${upgrade.description}`,
                 {
                     align: 'center',
-                    color: '#111827',
-                    fontFamily: 'system-ui, sans-serif',
-                    fontSize: '20px',
+                    ...grimTextStyle(GRIM.ink, '20px'),
                     wordWrap: { width: 220 },
                 },
             )
@@ -320,7 +320,7 @@ export class GameScene extends Phaser.Scene {
     private endGame = (): void => {
         this.physics.pause();
         this.time.paused = true;
-        this.player.setFillStyle(0x5c6670);
+        this.player.setTint(0x5c6670);
         this.hud.showGameOver();
     };
 
@@ -329,7 +329,7 @@ export class GameScene extends Phaser.Scene {
         this.achievements.recordVictory(this.time.now / 1000, this.combat.health);
         this.physics.pause();
         this.time.paused = true;
-        this.player.setFillStyle(0x60a5fa);
+        this.player.setTint(0x60a5fa);
         this.hud.showVictory();
     }
 }

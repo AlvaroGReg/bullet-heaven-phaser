@@ -8,6 +8,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     width: 1280,
     height: 720,
     backgroundColor: '#10151f',
+    pixelArt: true,
     disableContextMenu: true,
     scene: [MenuScene, GameScene],
     input: {

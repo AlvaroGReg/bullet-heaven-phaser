@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { i18n } from '../i18n';
 import type { Locale } from '../i18n';
+import { GRIM, grimButtonStyle, grimTextStyle } from './grimTheme';
 
 const CONTROLS_DURATION = 10_000;
 const BAR_WIDTH = 260;
@@ -70,7 +71,7 @@ export class GameHud {
                 24 + BAR_WIDTH / 2,
                 54,
                 this.getExperienceLabel(level),
-                this.textStyle('#eff6ff', '16px'),
+                this.textStyle(GRIM.text, '16px'),
             )
             .setOrigin(0.5, 0)
             .setScrollFactor(0);
@@ -79,7 +80,7 @@ export class GameHud {
         this.setExperience(level, experience, requiredExperience);
 
         this.timerText = this.scene.add
-            .text(this.scene.scale.width - 24, 20, this.getTimerLabel(), this.textStyle('#f2f5f7', '18px'))
+            .text(this.scene.scale.width - 24, 20, this.getTimerLabel(), this.textStyle(GRIM.text, '18px'))
             .setOrigin(1, 0)
             .setScrollFactor(0);
 
@@ -93,7 +94,7 @@ export class GameHud {
                 24,
                 88,
                 this.getControlsText(),
-                this.textStyle('#aebac6', '16px'),
+                this.textStyle(GRIM.mutedText, '16px'),
             )
             .setScrollFactor(0);
 
@@ -219,9 +220,7 @@ export class GameHud {
             this.scene.add
                 .text(this.scene.scale.width / 2, y, text, {
                     align: 'center',
-                    color: '#f8fafc',
-                    fontFamily: 'system-ui, sans-serif',
-                    fontSize: '40px',
+                    ...grimTextStyle(GRIM.text, '40px'),
                 })
                 .setOrigin(0.5)
                 .setScrollFactor(0)
@@ -232,7 +231,7 @@ export class GameHud {
     private addMenuLabel(text: string, y: number): void {
         this.menuObjects.push(
             this.scene.add
-                .text(this.scene.scale.width / 2, y, text, this.textStyle('#cbd5e1', '18px'))
+                .text(this.scene.scale.width / 2, y, text, this.textStyle(GRIM.mutedText, '18px'))
                 .setOrigin(0.5)
                 .setScrollFactor(0)
                 .setDepth(21),
@@ -242,12 +241,7 @@ export class GameHud {
     private addMenuButton(text: string, y: number, callback: () => void, color: string, x = this.scene.scale.width / 2): void {
         this.menuObjects.push(
             this.scene.add
-                .text(x, y, text, {
-                    backgroundColor: color,
-                    color: '#f8fafc',
-                    fontFamily: 'system-ui, sans-serif',
-                    fontSize: '22px',
-                })
+                .text(x, y, text, grimButtonStyle(color, '22px'))
                 .setOrigin(0.5)
                 .setPadding(18, 10)
                 .setScrollFactor(0)
@@ -295,10 +289,6 @@ export class GameHud {
     }
 
     private textStyle(color: string, fontSize: string): Phaser.Types.GameObjects.Text.TextStyle {
-        return {
-            color,
-            fontFamily: 'system-ui, sans-serif',
-            fontSize,
-        };
+        return grimTextStyle(color, fontSize);
     }
 }

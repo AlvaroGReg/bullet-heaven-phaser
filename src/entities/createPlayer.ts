@@ -1,13 +1,15 @@
 import Phaser from 'phaser';
 import type { PlayerCharacter } from '../game/playerCharacters';
+import { ROGUE_TEXTURE } from '../sprites/rogue';
 
-export function createPlayer(scene: Phaser.Scene, x: number, y: number, character: PlayerCharacter): Phaser.GameObjects.Arc {
-    const player = scene.add.circle(x, y, 18, character.color);
-    player.setStrokeStyle(3, 0xd9fff0);
-    scene.physics.add.existing(player);
+export type Player = Phaser.Physics.Arcade.Sprite;
 
-    const body = player.body as Phaser.Physics.Arcade.Body;
-    body.setCircle(18);
+export function createPlayer(scene: Phaser.Scene, x: number, y: number, _character: PlayerCharacter): Player {
+    const player = scene.physics.add.sprite(x, y, ROGUE_TEXTURE);
+    player.setDisplaySize(36, 36);
+
+    const body = player.body;
+    body.setCircle(14, 2, 4);
     body.setCollideWorldBounds(true);
 
     return player;

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { createEnemy } from '../entities/createEnemy';
+import type { Player } from '../entities/createPlayer';
 import type { EnemyKind } from '../entities/enemyTypes';
 import {
     ELITE_SPAWN_INTERVAL,
@@ -27,7 +28,7 @@ export class EnemySpawner {
 
     public constructor(
         private readonly scene: Phaser.Scene,
-        private readonly player: Phaser.GameObjects.Arc,
+        private readonly player: Player,
         private readonly enemies: Phaser.Physics.Arcade.Group,
     ) {
         this.nextSpawnAt = this.scene.time.now + ENEMY_SPAWN_INITIAL_INTERVAL;

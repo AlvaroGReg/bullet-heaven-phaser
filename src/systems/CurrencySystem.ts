@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { Player } from '../entities/createPlayer';
 
 type GoldCoin = Phaser.GameObjects.Arc & {
     amount: number;
@@ -9,7 +10,7 @@ export class CurrencySystem {
 
     public constructor(
         private readonly scene: Phaser.Scene,
-        player: Phaser.GameObjects.Arc,
+        player: Player,
         private readonly onGoldCollected: (amount: number) => void,
     ) {
         this.coins = this.scene.physics.add.group();

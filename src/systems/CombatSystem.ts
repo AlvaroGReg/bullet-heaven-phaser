@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import type { Enemy } from '../entities/createEnemy';
+import type { Player } from '../entities/createPlayer';
+import { DAGGER_TEXTURE } from '../sprites/rogue';
 import {
     AUTO_ATTACK_INTERVAL,
     ENEMY_DAMAGE_COOLDOWN,
@@ -11,7 +13,7 @@ import { WEAPON_DEFINITIONS } from './WeaponSystem';
 import type { WeaponSystem } from './WeaponSystem';
 import type { WeaponKind } from './WeaponSystem';
 
-type Projectile = Phaser.GameObjects.Arc & {
+type Projectile = (Phaser.GameObjects.Arc | Phaser.Physics.Arcade.Sprite) & {
     areaRadius: number;
     damage: number;
     piercing: number;
@@ -103,7 +105,7 @@ export class CombatSystem {
 
     public constructor(
         private readonly scene: Phaser.Scene,
-        private readonly player: Phaser.GameObjects.Arc,
+        private readonly player: Player,
         private readonly enemies: Phaser.Physics.Arcade.Group,
         private readonly stats: PlayerStats,
         private readonly weapons: WeaponSystem,
@@ -194,18 +196,42 @@ export class CombatSystem {
             return;
         }
 
-        const projectile = this.scene.add.circle(
-            this.player.x,
-            this.player.y,
-            definition.projectileRadius,
-            definition.color,
-        ) as Projectile;
+        if (weapon === 'dagger') {
+            const offset = new Phaser.Math.Vector2(-direction.y, direction.x).scale(7);
+            this.fireProjectile(weapon, definition, direction, offset);
+            this.fireProjectile(weapon, definition, direction, offset.negate());
+            return;
+        }
+
+        this.fireProjectile(weapon, definition, direction);
+    }
+
+    private fireProjectile(
+        weapon: WeaponKind,
+        definition: (typeof WEAPON_DEFINITIONS)[WeaponKind],
+        direction: Phaser.Math.Vector2,
+        offset = new Phaser.Math.Vector2(),
+    ): void {
+        const projectile = weapon === 'dagger'
+            ? this.scene.physics.add.sprite(this.player.x + offset.x, this.player.y + offset.y, DAGGER_TEXTURE) as Projectile
+            : this.scene.add.circle(
+                this.player.x,
+                this.player.y,
+                definition.projectileRadius,
+                definition.color,
+            ) as Projectile;
+
+        if (weapon === 'dagger') {
+            projectile.setRotation(direction.angle() + Math.PI / 2);
+        } else {
+            this.scene.physics.add.existing(projectile);
+        }
+
         projectile.areaRadius = definition.areaRadius;
         projectile.damage = definition.damage + this.stats.damage - 1;
         projectile.piercing = definition.piercing + this.stats.projectilePiercing;
         projectile.weapon = weapon;
         projectile.hitEnemies = new Set();
-        this.scene.physics.add.existing(projectile);
         this.projectiles.add(projectile);
 
         const body = projectile.body as Phaser.Physics.Arcade.Body;

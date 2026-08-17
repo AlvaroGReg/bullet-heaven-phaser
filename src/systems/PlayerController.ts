@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { Player } from '../entities/createPlayer';
 import { CONTROLLER_DEAD_ZONE } from '../game/constants';
 import type { PlayerStats } from '../game/PlayerStats';
 
@@ -20,7 +21,7 @@ export class PlayerController {
 
     public constructor(
         private readonly scene: Phaser.Scene,
-        private readonly player: Phaser.GameObjects.Arc,
+        private readonly player: Player,
         private readonly stats: PlayerStats,
         private readonly callbacks: PlayerControllerCallbacks,
     ) {

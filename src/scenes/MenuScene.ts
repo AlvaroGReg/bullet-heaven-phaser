@@ -6,6 +6,7 @@ import { PLAYER_CHARACTERS } from '../game/playerCharacters';
 import type { PlayerCharacter } from '../game/playerCharacters';
 import { i18n } from '../i18n';
 import type { Locale } from '../i18n';
+import { GRIM, grimButtonStyle, grimTextStyle } from '../ui/grimTheme';
 
 type MenuView = 'achievements' | 'main' | 'characters' | 'meta';
 
@@ -82,10 +83,7 @@ export class MenuScene extends Phaser.Scene {
             const selected = character.id === this.selectedCharacter.id;
             const card = this.add.text(x, 290, i18n.t(character.nameKey), {
                 align: 'center',
-                backgroundColor: selected ? '#1d4ed8' : '#1e293b',
-                color: '#f8fafc',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '26px',
+                ...grimButtonStyle(selected ? '#1d4ed8' : GRIM.panelRaised, '26px'),
             })
                 .setOrigin(0.5)
                 .setFixedSize(280, 150)
@@ -119,10 +117,8 @@ export class MenuScene extends Phaser.Scene {
             ))].join('\n\n');
             const card = this.add.text(x, 330, text, {
                 align: 'center',
-                backgroundColor: '#1e293b',
-                color: '#e2e8f0',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '16px',
+                ...grimTextStyle(GRIM.text, '16px'),
+                backgroundColor: GRIM.panel,
                 wordWrap: { width: 260 },
             }).setOrigin(0.5).setFixedSize(280, 315).setPadding(16);
             this.objects.push(card);
@@ -163,7 +159,7 @@ export class MenuScene extends Phaser.Scene {
                 return `${this.getAchievementLabel(achievement)}\n${status}`;
             }).join('\n\n');
             this.addObject(this.add.text(175 + column * 310, 365, text, {
-                align: 'center', backgroundColor: '#1e293b', color: '#e2e8f0', fontFamily: 'system-ui, sans-serif', fontSize: '13px',
+                align: 'center', ...grimTextStyle(GRIM.text, '13px'), backgroundColor: GRIM.panel,
                 wordWrap: { width: 260 },
             }).setOrigin(0.5).setFixedSize(280, 450).setPadding(12));
         }
@@ -215,19 +211,19 @@ export class MenuScene extends Phaser.Scene {
 
     private addTitle(text: string, y: number): void {
         this.addObject(this.add.text(this.scale.width / 2, y, text, {
-            color: '#f8fafc', fontFamily: 'system-ui, sans-serif', fontSize: '44px',
+            ...grimTextStyle(GRIM.text, '44px'),
         }).setOrigin(0.5));
     }
 
     private addLabel(text: string, y: number, color: string): void {
         this.addObject(this.add.text(this.scale.width / 2, y, text, {
-            color, fontFamily: 'system-ui, sans-serif', fontSize: '20px',
+            ...grimTextStyle(color, '20px'),
         }).setOrigin(0.5));
     }
 
     private addButton(text: string, y: number, callback: () => void, color: string, x = this.scale.width / 2): void {
         this.addObject(this.add.text(x, y, text, {
-            backgroundColor: color, color: '#f8fafc', fontFamily: 'system-ui, sans-serif', fontSize: '22px',
+            ...grimButtonStyle(color, '22px'),
         }).setOrigin(0.5).setPadding(18, 10).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, callback));
     }
 
@@ -235,7 +231,7 @@ export class MenuScene extends Phaser.Scene {
         const x = this.scale.width - 42;
         const flag = i18n.locale === 'es' ? '🇪🇸' : i18n.locale === 'ja' ? '🇯🇵' : '🇬🇧';
         this.addObject(this.add.text(x, 42, flag, {
-            backgroundColor: '#1e293b', color: '#f8fafc', fontFamily: 'system-ui, sans-serif', fontSize: '24px',
+            ...grimButtonStyle(GRIM.panelRaised, '24px'),
         }).setOrigin(0.5).setPadding(10, 6).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, () => {
             this.languageMenuOpen = !this.languageMenuOpen;
             this.render();
@@ -246,13 +242,13 @@ export class MenuScene extends Phaser.Scene {
         }
 
         this.addObject(this.add.text(this.scale.width - 150, 96, '🇬🇧 English', {
-            backgroundColor: '#334155', color: '#f8fafc', fontFamily: 'system-ui, sans-serif', fontSize: '18px',
+            ...grimButtonStyle(GRIM.panelRaised, '18px'),
         }).setOrigin(0.5).setPadding(14, 9).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, () => this.setLocale('en')));
         this.addObject(this.add.text(this.scale.width - 150, 146, '🇪🇸 Español', {
-            backgroundColor: '#334155', color: '#f8fafc', fontFamily: 'system-ui, sans-serif', fontSize: '18px',
+            ...grimButtonStyle(GRIM.panelRaised, '18px'),
         }).setOrigin(0.5).setPadding(14, 9).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, () => this.setLocale('es')));
         this.addObject(this.add.text(this.scale.width - 150, 196, '🇯🇵 日本語', {
-            backgroundColor: '#334155', color: '#f8fafc', fontFamily: 'system-ui, sans-serif', fontSize: '18px',
+            ...grimButtonStyle(GRIM.panelRaised, '18px'),
         }).setOrigin(0.5).setPadding(14, 9).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, () => this.setLocale('ja')));
     }
 

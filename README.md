@@ -1,78 +1,63 @@
-# Bullet Heaven con Phaser
+# Bullet Heaven with Phaser
 
-Proyecto bullet-heaven 2D en navegador. El objetivo no es diseñar una arquitectura final ni optimizar prematuramente, sino comprender los sistemas que componen este tipo de juego mediante incrementos pequeños y jugables.
+Browser-based 2D bullet-heaven project. The goal is not to design a final architecture or optimize prematurely, but to understand the systems behind this kind of game through small, playable increments.
 
-## Tecnologias
+## Technologies
 
 - Phaser 3
 - TypeScript
 - Vite
 
-## Requisitos
+## Requirements
 
-- Node.js 20 o posterior
+- Node.js 20 or later
 - npm
 
-## Ejecutar el proyecto
+## Run the Project
 
 ```bash
 npm install
 npm run dev
 ```
 
-Para generar una version de produccion:
+To create a production build:
 
 ```bash
 npm run build
 ```
 
-## Estructura
+## Structure
 
 ```text
 src/
-    entities/  Representacion fisica de jugador y enemigos
-    game/      Configuracion y constantes compartidas
-    scenes/    Flujo y pantallas del juego
-    systems/   Entrada y combate
-    ui/        Interfaz de partida
-    world/     Creacion del mapa
-    main.ts    Punto de entrada
+    entities/  Physical representation of the player and enemies
+    game/      Shared configuration and constants
+    scenes/    Game flow and screens
+    systems/   Input and combat
+    ui/        In-game interface
+    world/     Map creation
+    main.ts    Entry point
 ```
 
-La escena coordina los sistemas y la interfaz; cada modulo contiene una responsabilidad jugable concreta.
+The scene coordinates systems and the interface; each module holds one specific gameplay responsibility.
 
-## Agentes y skills
+## Agents and Skills
 
-La configuracion de agentes se centraliza en `.agents/`:
+Agent configuration is centralized in `.agents/`:
 
-- `.agents/AGENTS.md`: instrucciones comunes y politica de uso de skills.
-- `.agents/agents/`: roles reutilizables para implementacion, planificacion y revision.
-- `.agents/skills/`: skills instaladas con `npx skills add`.
-- `skills-lock.json`: registro reproducible de las skills instaladas.
+- `.agents/AGENTS.md`: shared instructions and skill-use policy.
+- `.agents/agents/`: reusable implementation, planning, and review roles.
+- `.agents/skills/`: skills installed with `npx skills add`.
+- `skills-lock.json`: reproducible record of installed skills.
 
-Los roles disponibles son:
+Available roles:
 
-- `phaser-implementer`: implementa incrementos pequenos y ejecuta la compilacion.
-- `gameplay-planner`: divide una mecanica en pasos jugables sin modificar codigo.
-- `code-reviewer`: revisa cambios en busca de errores, regresiones y pruebas faltantes.
+- `phaser-implementer`: implements small increments and runs the build.
+- `gameplay-planner`: breaks mechanics into playable steps without editing code.
+- `code-reviewer`: reviews changes for bugs, regressions, and missing tests.
 
-OpenCode carga `.agents/AGENTS.md`, las skills y los roles mediante `opencode.json`. Reinicialo despues de modificar esta configuracion, los roles o las skills.
+OpenCode loads `.agents/AGENTS.md`, skills, and roles through `opencode.json`. Restart it after changing this configuration, roles, or skills.
 
-## Ruta de desarrollo
+## Intentional Limits
 
-1. Mantener una escena base que cargue correctamente en el navegador.
-2. Crear al jugador: representacion visual, movimiento en ocho direcciones y limites del mapa.
-3. Incorporar un enemigo que persiga al jugador.
-4. Implementar un ataque automatico, dano, vida y muerte.
-5. Anadir enemigos mediante un generador sencillo y aumentar su cantidad con el tiempo.
-6. Crear gemas de experiencia, recogida y subida de nivel.
-7. Mostrar una seleccion de mejoras al subir de nivel: dano, cadencia, velocidad, proyectiles o alcance.
-8. Construir la interfaz de partida: vida, nivel, experiencia y temporizador.
-9. Incorporar varios tipos de enemigos, armas y mejoras.
-10. Anadir pantallas de inicio, derrota y reinicio de partida.
-11. Revisar las responsabilidades del codigo: escenas, entidades, combate, generacion, progresion e interfaz.
-12. Mejorar rendimiento solo cuando exista un problema observable y medible.
-
-## Limites intencionales
-
-Al inicio no se implementaran ECS, object pooling, persistencia, metaprogresion, multijugador ni optimizaciones para miles de entidades. Se anadiran unicamente cuando el aprendizaje o una limitacion real del prototipo lo requieran.
+Initially, ECS, object pooling, persistence, meta-progression, multiplayer, and optimizations for thousands of entities will not be implemented. They will be added only when learning goals or a real prototype limitation require them.

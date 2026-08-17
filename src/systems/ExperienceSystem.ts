@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { Player } from '../entities/createPlayer';
 import {
     EXPERIENCE_LEVEL_GROWTH,
     EXPERIENCE_PER_GEM,
@@ -40,7 +41,7 @@ export class ExperienceSystem {
 
     public constructor(
         private readonly scene: Phaser.Scene,
-        private readonly player: Phaser.GameObjects.Arc,
+        private readonly player: Player,
         private readonly stats: PlayerStats,
         private readonly callbacks: ExperienceCallbacks,
     ) {
