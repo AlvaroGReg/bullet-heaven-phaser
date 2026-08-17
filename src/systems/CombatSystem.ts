@@ -1,12 +1,20 @@
 import Phaser from 'phaser';
 import type { Enemy } from '../entities/createEnemy';
+import {
+    AUTO_ATTACK_INTERVAL,
+    PROJECTILE_LIFETIME,
+    PROJECTILE_SPEED,
+} from '../game/constants';
 import type { PlayerStats } from '../game/PlayerStats';
 import {
     ENEMY_DAMAGE_COOLDOWN,
-    PLAYER_MAX_HEALTH,
 } from '../game/constants';
+import { WEAPON_DEFINITIONS } from './WeaponSystem';
+import type { WeaponSystem } from './WeaponSystem';
 
 type Projectile = Phaser.GameObjects.Arc & {
+    areaRadius: number;
+    damage: number;
     piercing: number;
     hitEnemies: Set<Phaser.GameObjects.Arc>;
 };
@@ -16,7 +24,7 @@ type EnemyProjectile = Phaser.GameObjects.Arc & {
 };
 
 type CombatCallbacks = {
-    onPlayerHealthChanged: (health: number) => void;
+    onPlayerHealthChanged: (health: number, maxHealth: number) => void;
     onPlayerDeath: () => void;
     onEnemyDeath: (enemy: Enemy) => void;
 };
@@ -28,11 +36,9 @@ export class CombatSystem {
 
     private readonly autoAimDirection = new Phaser.Math.Vector2();
 
-    private playerHealth = PLAYER_MAX_HEALTH;
+    private playerHealth: number;
 
     private nextPlayerDamageAt = 0;
-
-    private nextAutoAttackAt = 0;
 
     private gameOver = false;
 
@@ -54,7 +60,11 @@ export class CombatSystem {
         }
 
         projectile.hitEnemies.add(enemy);
-        this.damageEnemy(enemy, this.stats.damage);
+        this.damageEnemy(enemy, projectile.damage);
+
+        if (projectile.areaRadius > 0) {
+            this.damageArea(projectile, enemy);
+        }
 
         if (projectile.hitEnemies.size > projectile.piercing) {
             projectile.destroy();
@@ -94,8 +104,10 @@ export class CombatSystem {
         private readonly player: Phaser.GameObjects.Arc,
         private readonly enemies: Phaser.Physics.Arcade.Group,
         private readonly stats: PlayerStats,
+        private readonly weapons: WeaponSystem,
         private readonly callbacks: CombatCallbacks,
     ) {
+        this.playerHealth = this.stats.maxHealth;
         this.projectiles = this.scene.physics.add.group();
         this.enemyProjectiles = this.scene.physics.add.group();
         this.scene.physics.add.overlap(
@@ -119,11 +131,17 @@ export class CombatSystem {
         return this.playerHealth;
     }
 
+    public get maxHealth(): number {
+        return this.stats.maxHealth;
+    }
+
     public get isGameOver(): boolean {
         return this.gameOver;
     }
 
-    public update(): void {
+    public update(delta: number): void {
+        this.regeneratePlayer(delta);
+
         for (const gameObject of this.enemies.getChildren()) {
             const enemy = gameObject as Enemy;
 
@@ -132,9 +150,8 @@ export class CombatSystem {
             }
         }
 
-        if (this.autoAimEnabled && this.updateAutoAim() && this.scene.time.now >= this.nextAutoAttackAt) {
+        if (this.autoAimEnabled && this.updateAutoAim()) {
             this.attack(this.autoAimDirection);
-            this.nextAutoAttackAt = this.scene.time.now + this.stats.attackInterval;
         }
     }
 
@@ -148,25 +165,53 @@ export class CombatSystem {
         const direction = this.autoAimEnabled
             ? this.autoAimDirection.set(target.x - this.player.x, target.y - this.player.y).normalize()
             : aimDirection;
-        const projectile = this.scene.add.circle(this.player.x, this.player.y, 6, 0xffe28a) as Projectile;
-        projectile.piercing = this.stats.projectilePiercing;
+
+        for (const weapon of this.weapons.weapons) {
+            this.fireWeapon(weapon, direction);
+        }
+    }
+
+    public toggleAutoAim(): void {
+        this.autoAimEnabled = !this.autoAimEnabled;
+    }
+
+    public increaseMaxHealth(amount: number): void {
+        this.stats.maxHealth += amount;
+        this.playerHealth += amount;
+        this.callbacks.onPlayerHealthChanged(this.playerHealth, this.stats.maxHealth);
+    }
+
+    private fireWeapon(weapon: keyof typeof WEAPON_DEFINITIONS, direction: Phaser.Math.Vector2): void {
+        const definition = WEAPON_DEFINITIONS[weapon];
+        const attackInterval = definition.attackInterval * (this.stats.attackInterval / AUTO_ATTACK_INTERVAL);
+
+        if (!this.weapons.canFire(weapon, this.scene.time.now, attackInterval)) {
+            return;
+        }
+
+        const projectile = this.scene.add.circle(
+            this.player.x,
+            this.player.y,
+            definition.projectileRadius,
+            definition.color,
+        ) as Projectile;
+        projectile.areaRadius = definition.areaRadius;
+        projectile.damage = definition.damage + this.stats.damage - 1;
+        projectile.piercing = definition.piercing + this.stats.projectilePiercing;
         projectile.hitEnemies = new Set();
         this.scene.physics.add.existing(projectile);
         this.projectiles.add(projectile);
 
         const body = projectile.body as Phaser.Physics.Arcade.Body;
-        body.setVelocity(direction.x * this.stats.projectileSpeed, direction.y * this.stats.projectileSpeed);
+        const projectileSpeed = definition.projectileSpeed + this.stats.projectileSpeed - PROJECTILE_SPEED;
+        body.setVelocity(direction.x * projectileSpeed, direction.y * projectileSpeed);
 
-        this.scene.time.delayedCall(this.stats.projectileLifetime, () => {
+        const lifetime = definition.lifetime + this.stats.projectileLifetime - PROJECTILE_LIFETIME;
+        this.scene.time.delayedCall(lifetime, () => {
             if (projectile.active) {
                 projectile.destroy();
             }
         });
-    }
-
-    public toggleAutoAim(): void {
-        this.autoAimEnabled = !this.autoAimEnabled;
-        this.nextAutoAttackAt = this.scene.time.now;
     }
 
     private updateAutoAim(): boolean {
@@ -243,6 +288,34 @@ export class CombatSystem {
         }
     }
 
+    private damageArea(projectile: Projectile, hitEnemy: Enemy): void {
+        for (const gameObject of this.enemies.getChildren()) {
+            const enemy = gameObject as Enemy;
+
+            if (
+                enemy.active
+                && enemy !== hitEnemy
+                && !projectile.hitEnemies.has(enemy)
+                && Phaser.Math.Distance.Between(projectile.x, projectile.y, enemy.x, enemy.y) <= projectile.areaRadius
+            ) {
+                projectile.hitEnemies.add(enemy);
+                this.damageEnemy(enemy, projectile.damage);
+            }
+        }
+    }
+
+    private regeneratePlayer(delta: number): void {
+        if (this.stats.healthRegeneration <= 0 || this.playerHealth >= this.stats.maxHealth) {
+            return;
+        }
+
+        this.playerHealth = Math.min(
+            this.stats.maxHealth,
+            this.playerHealth + this.stats.healthRegeneration * (delta / 1000),
+        );
+        this.callbacks.onPlayerHealthChanged(this.playerHealth, this.stats.maxHealth);
+    }
+
     private damagePlayer(damage: number): void {
         if (this.gameOver || this.scene.time.now < this.nextPlayerDamageAt) {
             return;
@@ -250,7 +323,7 @@ export class CombatSystem {
 
         this.nextPlayerDamageAt = this.scene.time.now + ENEMY_DAMAGE_COOLDOWN;
         this.playerHealth -= damage;
-        this.callbacks.onPlayerHealthChanged(this.playerHealth);
+        this.callbacks.onPlayerHealthChanged(this.playerHealth, this.stats.maxHealth);
 
         if (this.playerHealth <= 0) {
             this.gameOver = true;

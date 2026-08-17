@@ -1,5 +1,4 @@
 import Phaser from 'phaser';
-import { PLAYER_MAX_HEALTH } from '../game/constants';
 
 const CONTROLS_DURATION = 10_000;
 const BAR_WIDTH = 260;
@@ -28,6 +27,7 @@ export class GameHud {
     public constructor(
         private readonly scene: Phaser.Scene,
         health: number,
+        maxHealth: number,
         level: number,
         experience: number,
         requiredExperience: number,
@@ -59,7 +59,7 @@ export class GameHud {
             .setOrigin(0.5, 0)
             .setScrollFactor(0);
 
-        this.setHealth(health);
+        this.setHealth(health, maxHealth);
         this.setExperience(level, experience, requiredExperience);
 
         this.timerText = this.scene.add
@@ -89,9 +89,9 @@ export class GameHud {
         }
     }
 
-    public setHealth(health: number): void {
-        const safeHealth = Phaser.Math.Clamp(health, 0, PLAYER_MAX_HEALTH);
-        this.healthFill.setDisplaySize(BAR_WIDTH * (safeHealth / PLAYER_MAX_HEALTH), BAR_HEIGHT);
+    public setHealth(health: number, maxHealth: number): void {
+        const safeHealth = Phaser.Math.Clamp(health, 0, maxHealth);
+        this.healthFill.setDisplaySize(BAR_WIDTH * (safeHealth / maxHealth), BAR_HEIGHT);
     }
 
     public setExperience(level: number, experience: number, requiredExperience: number): void {

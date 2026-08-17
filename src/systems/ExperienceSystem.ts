@@ -35,19 +35,38 @@ export class ExperienceSystem {
             return;
         }
 
-        gem.destroy();
-        const experience = gem.value * (gem.usesPlayerMultiplier ? this.stats.experienceMultiplier : 1);
-        this.addExperience(experience);
+        this.collectGem(gem);
     };
 
     public constructor(
         private readonly scene: Phaser.Scene,
-        player: Phaser.GameObjects.Arc,
+        private readonly player: Phaser.GameObjects.Arc,
         private readonly stats: PlayerStats,
         private readonly callbacks: ExperienceCallbacks,
     ) {
         this.gems = this.scene.physics.add.group();
-        this.scene.physics.add.overlap(player, this.gems, this.handleGemPickup, undefined, this);
+        this.scene.physics.add.overlap(this.player, this.gems, this.handleGemPickup, undefined, this);
+    }
+
+    public update(): void {
+        if (this.stats.pickupRange <= 0) {
+            return;
+        }
+
+        for (const gameObject of this.gems.getChildren()) {
+            const gem = gameObject as ExperienceGem;
+
+            if (gem.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, gem.x, gem.y) <= this.stats.pickupRange) {
+                this.collectGem(gem);
+                return;
+            }
+        }
+    }
+
+    private collectGem(gem: ExperienceGem): void {
+        gem.destroy();
+        const experience = gem.value * (gem.usesPlayerMultiplier ? this.stats.experienceMultiplier : 1);
+        this.addExperience(experience);
     }
 
     public get currentLevel(): number {

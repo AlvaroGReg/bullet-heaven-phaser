@@ -1,5 +1,6 @@
 import {
     AUTO_ATTACK_INTERVAL,
+    PLAYER_MAX_HEALTH,
     PLAYER_SPEED,
     PROJECTILE_LIFETIME,
     PROJECTILE_PIERCING,
@@ -20,4 +21,10 @@ export class PlayerStats {
     public movementSpeed = PLAYER_SPEED;
 
     public experienceMultiplier = 1;
+
+    public maxHealth = PLAYER_MAX_HEALTH;
+
+    public healthRegeneration = 0;
+
+    public pickupRange = 0;
 }

@@ -9,6 +9,7 @@ import { ExperienceSystem } from '../systems/ExperienceSystem';
 import { PlayerController } from '../systems/PlayerController';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import type { Upgrade } from '../systems/UpgradeSystem';
+import { WeaponSystem } from '../systems/WeaponSystem';
 import { GameHud } from '../ui/GameHud';
 import { createArena } from '../world/createArena';
 
@@ -28,6 +29,8 @@ export class GameScene extends Phaser.Scene {
     private stats!: PlayerStats;
 
     private upgrades!: UpgradeSystem;
+
+    private weapons!: WeaponSystem;
 
     private hud!: GameHud;
 
@@ -64,12 +67,12 @@ export class GameScene extends Phaser.Scene {
         this.enemies.add(enemy);
 
         this.stats = new PlayerStats();
+        this.weapons = new WeaponSystem();
         this.experience = new ExperienceSystem(this, this.player, this.stats, {
             onExperienceChanged: this.updateExperience,
             onLevelUp: this.queueUpgradeSelection,
         });
-        this.upgrades = new UpgradeSystem(this.stats);
-        this.combat = new CombatSystem(this, this.player, this.enemies, this.stats, {
+        this.combat = new CombatSystem(this, this.player, this.enemies, this.stats, this.weapons, {
             onPlayerHealthChanged: this.updateHealth,
             onPlayerDeath: this.endGame,
             onEnemyDeath: (defeatedEnemy) => {
@@ -81,6 +84,11 @@ export class GameScene extends Phaser.Scene {
                 );
             },
         });
+        this.upgrades = new UpgradeSystem(
+            this.stats,
+            (amount) => this.combat.increaseMaxHealth(amount),
+            this.weapons,
+        );
         this.controller = new PlayerController(this, this.player, this.stats, {
             attack: (aimDirection) => {
                 if (!this.paused && !this.upgradeSelectionActive) {
@@ -102,6 +110,7 @@ export class GameScene extends Phaser.Scene {
         this.hud = new GameHud(
             this,
             this.combat.health,
+            this.combat.maxHealth,
             this.experience.currentLevel,
             this.experience.currentExperience,
             this.experience.currentRequiredExperience,
@@ -121,12 +130,13 @@ export class GameScene extends Phaser.Scene {
 
         this.hud.update(delta);
         this.controller.update();
+        this.experience.update();
         this.enemySpawner.update();
-        this.combat.update();
+        this.combat.update(delta);
     }
 
-    private updateHealth = (health: number): void => {
-        this.hud.setHealth(health);
+    private updateHealth = (health: number, maxHealth: number): void => {
+        this.hud.setHealth(health, maxHealth);
     };
 
     private updateExperience = (level: number, experience: number, requiredExperience: number): void => {
@@ -160,7 +170,7 @@ export class GameScene extends Phaser.Scene {
             .setScrollFactor(0)
             .setDepth(11);
 
-        const choices = this.upgrades.createChoices(3);
+        const choices = this.upgrades.createChoices(3, this.experience.currentLevel);
         this.upgradeCards = choices.map((upgrade, index) => this.createUpgradeCard(upgrade, index));
     }
 

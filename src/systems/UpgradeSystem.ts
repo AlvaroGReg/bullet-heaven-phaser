@@ -1,42 +1,69 @@
 import type { PlayerStats } from '../game/PlayerStats';
+import { UPGRADE_RARITIES } from '../game/constants';
+import type { WeaponKind, WeaponSystem } from './WeaponSystem';
 
-export type UpgradeRarity = {
-    name: string;
-    color: string;
-    value: number;
-    weight: number;
-};
+export type UpgradeRarity = (typeof UPGRADE_RARITIES)[number];
+
+export type UpgradeType =
+    | 'experience'
+    | 'damage'
+    | 'attackSpeed'
+    | 'projectileSpeed'
+    | 'projectileLifetime'
+    | 'piercing'
+    | 'movementSpeed'
+    | 'health'
+    | 'regeneration'
+    | 'pickupRange'
+    | 'weapon';
 
 export type Upgrade = {
     name: string;
     rarity: UpgradeRarity;
+    type: UpgradeType;
     description: string;
     apply: () => void;
 };
 
-const RARITIES: UpgradeRarity[] = [
-    { name: 'Comun', color: '#f8fafc', value: 1, weight: 50 },
-    { name: 'Poco comun', color: '#4ade80', value: 2, weight: 25 },
-    { name: 'Rara', color: '#60a5fa', value: 3, weight: 14 },
-    { name: 'Epica', color: '#c084fc', value: 5, weight: 7 },
-    { name: 'Legendaria', color: '#fbbf24', value: 7, weight: 3 },
-    { name: 'Mitica', color: '#f87171', value: 10, weight: 1 },
-];
-
 export class UpgradeSystem {
-    public constructor(private readonly stats: PlayerStats) {}
+    private readonly upgradeCounts: Record<UpgradeType, number> = {
+        experience: 0,
+        damage: 0,
+        attackSpeed: 0,
+        projectileSpeed: 0,
+        projectileLifetime: 0,
+        piercing: 0,
+        movementSpeed: 0,
+        health: 0,
+        regeneration: 0,
+        pickupRange: 0,
+        weapon: 0,
+    };
 
-    public createChoices(count: number): Upgrade[] {
+    public constructor(
+        private readonly stats: PlayerStats,
+        private readonly increaseMaxHealth: (amount: number) => void,
+        private readonly weapons: WeaponSystem,
+    ) {}
+
+    public createChoices(count: number, level: number): Upgrade[] {
         const choices: Upgrade[] = [];
         const availableTypes = [
-            () => this.createExperienceUpgrade(),
-            () => this.createDamageUpgrade(),
-            () => this.createAttackSpeedUpgrade(),
-            () => this.createProjectileSpeedUpgrade(),
-            () => this.createProjectileLifetimeUpgrade(),
-            () => this.createPiercingUpgrade(),
-            () => this.createMovementSpeedUpgrade(),
+            () => this.createExperienceUpgrade(level),
+            () => this.createDamageUpgrade(level),
+            () => this.createAttackSpeedUpgrade(level),
+            () => this.createProjectileSpeedUpgrade(level),
+            () => this.createProjectileLifetimeUpgrade(level),
+            () => this.createPiercingUpgrade(level),
+            () => this.createMovementSpeedUpgrade(level),
+            () => this.createHealthUpgrade(level),
+            () => this.createRegenerationUpgrade(level),
+            () => this.createPickupRangeUpgrade(level),
         ];
+
+        if (this.weapons.hasFreeSlot && this.weapons.availableWeapons.length > 0) {
+            availableTypes.push(() => this.createWeaponUpgrade());
+        }
 
         while (choices.length < count && availableTypes.length > 0) {
             const index = Math.floor(Math.random() * availableTypes.length);
@@ -47,75 +74,152 @@ export class UpgradeSystem {
         return choices;
     }
 
-    private createExperienceUpgrade(): Upgrade {
-        return this.createUpgrade('Experiencia', (value) => `+${value * 10}% EXP de gemas`, (value) => {
+    private createExperienceUpgrade(level: number): Upgrade {
+        return this.createUpgrade('experience', 'Experiencia', level, (value) => `+${value * 10}% EXP de gemas`, (value) => {
             this.stats.experienceMultiplier += value * 0.1;
         });
     }
 
-    private createDamageUpgrade(): Upgrade {
-        return this.createUpgrade('Dano', (value) => `+${value} dano`, (value) => {
+    private createDamageUpgrade(level: number): Upgrade {
+        return this.createUpgrade('damage', 'Dano', level, (value) => `+${value} dano`, (value) => {
             this.stats.damage += value;
         });
     }
 
-    private createAttackSpeedUpgrade(): Upgrade {
-        return this.createUpgrade('Cadencia', (value) => `+${value * 5}% cadencia`, (value) => {
+    private createAttackSpeedUpgrade(level: number): Upgrade {
+        return this.createUpgrade('attackSpeed', 'Cadencia', level, (value) => `+${value * 5}% cadencia`, (value) => {
             this.stats.attackInterval = Math.max(100, this.stats.attackInterval * (1 - value * 0.05));
         });
     }
 
-    private createProjectileSpeedUpgrade(): Upgrade {
-        return this.createUpgrade('Velocidad de proyectil', (value) => `+${value * 40} velocidad`, (value) => {
+    private createProjectileSpeedUpgrade(level: number): Upgrade {
+        return this.createUpgrade('projectileSpeed', 'Velocidad de proyectil', level, (value) => `+${value * 40} velocidad`, (value) => {
             this.stats.projectileSpeed += value * 40;
         });
     }
 
-    private createProjectileLifetimeUpgrade(): Upgrade {
-        return this.createUpgrade('Vida de proyectil', (value) => `+${value * 100} ms`, (value) => {
+    private createProjectileLifetimeUpgrade(level: number): Upgrade {
+        return this.createUpgrade('projectileLifetime', 'Vida de proyectil', level, (value) => `+${value * 100} ms`, (value) => {
             this.stats.projectileLifetime += value * 100;
         });
     }
 
-    private createPiercingUpgrade(): Upgrade {
-        return this.createUpgrade('Perforacion', (value) => `+${Math.ceil(value / 2)} enemigos`, (value) => {
+    private createPiercingUpgrade(level: number): Upgrade {
+        return this.createUpgrade('piercing', 'Perforacion', level, (value) => `+${Math.ceil(value / 2)} enemigos`, (value) => {
             this.stats.projectilePiercing += Math.ceil(value / 2);
         });
     }
 
-    private createMovementSpeedUpgrade(): Upgrade {
-        return this.createUpgrade('Velocidad de movimiento', (value) => `+${value * 12} velocidad`, (value) => {
+    private createMovementSpeedUpgrade(level: number): Upgrade {
+        return this.createUpgrade('movementSpeed', 'Velocidad de movimiento', level, (value) => `+${value * 12} velocidad`, (value) => {
             this.stats.movementSpeed += value * 12;
         });
     }
 
+    private createHealthUpgrade(level: number): Upgrade {
+        return this.createUpgrade('health', 'Vida maxima', level, (value) => `+${value} vida maxima`, (value) => {
+            this.increaseMaxHealth(value);
+        });
+    }
+
+    private createRegenerationUpgrade(level: number): Upgrade {
+        return this.createUpgrade('regeneration', 'Regeneracion', level, (value) => `+${(value * 0.1).toFixed(1)} vida/s`, (value) => {
+            this.stats.healthRegeneration += value * 0.1;
+        });
+    }
+
+    private createPickupRangeUpgrade(level: number): Upgrade {
+        return this.createUpgrade('pickupRange', 'Rango de recogida', level, (value) => `+${value * 20} rango`, (value) => {
+            this.stats.pickupRange += value * 20;
+        });
+    }
+
+    private createWeaponUpgrade(): Upgrade {
+        const availableWeapons = this.weapons.availableWeapons;
+        const weapon = availableWeapons[Math.floor(Math.random() * availableWeapons.length)];
+
+        return this.createFixedUpgrade(
+            'weapon',
+            this.getWeaponName(weapon),
+            'Rara',
+            'Equipa esta arma',
+            () => this.weapons.equipWeapon(weapon),
+        );
+    }
+
     private createUpgrade(
+        type: UpgradeType,
         name: string,
+        level: number,
         getDescription: (value: number) => string,
         apply: (value: number) => void,
     ): Upgrade {
-        const rarity = this.chooseRarity();
+        const rarity = this.chooseRarity(type, level);
 
         return {
             name,
             rarity,
+            type,
             description: getDescription(rarity.value),
-            apply: () => apply(rarity.value),
+            apply: () => {
+                apply(rarity.value);
+                this.upgradeCounts[type] += 1;
+            },
         };
     }
 
-    private chooseRarity(): UpgradeRarity {
-        const roll = Math.random() * RARITIES.reduce((total, rarity) => total + rarity.weight, 0);
+    private createFixedUpgrade(
+        type: UpgradeType,
+        name: string,
+        rarityName: string,
+        description: string,
+        apply: () => boolean,
+    ): Upgrade {
+        const rarity = UPGRADE_RARITIES.find((candidate) => candidate.name === rarityName)!;
+
+        return {
+            name,
+            rarity,
+            type,
+            description,
+            apply: () => {
+                if (apply()) {
+                    this.upgradeCounts[type] += 1;
+                }
+            },
+        };
+    }
+
+    private getWeaponName(weapon: WeaponKind): string {
+        const names: Record<WeaponKind, string> = {
+            dagger: 'Daga',
+            bow: 'Arco',
+            crossbow: 'Ballesta',
+            staff: 'Vara de mago',
+            cannon: 'Canon',
+        };
+
+        return names[weapon];
+    }
+
+    private chooseRarity(type: UpgradeType, level: number): UpgradeRarity {
+        const weights = UPGRADE_RARITIES.map((rarity) => Math.max(
+            0.01,
+            rarity.initialWeight
+                + (level - 1) * rarity.levelWeightIncrease
+                + this.upgradeCounts[type] * rarity.typeWeightIncrease,
+        ));
+        const roll = Math.random() * weights.reduce((total, weight) => total + weight, 0);
         let threshold = 0;
 
-        for (const rarity of RARITIES) {
-            threshold += rarity.weight;
+        for (const [index, rarity] of UPGRADE_RARITIES.entries()) {
+            threshold += weights[index];
 
             if (roll < threshold) {
                 return rarity;
             }
         }
 
-        return RARITIES[0];
+        return UPGRADE_RARITIES[0];
     }
 }

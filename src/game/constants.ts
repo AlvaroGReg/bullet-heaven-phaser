@@ -17,3 +17,11 @@ export const EXPERIENCE_PER_GEM = 1;
 export const EXPERIENCE_TO_LEVEL = 5;
 export const EXPERIENCE_LEVEL_GROWTH = 1.25;
 export const CONTROLLER_DEAD_ZONE = 0.2;
+export const UPGRADE_RARITIES = [
+    { name: 'Comun', color: '#f8fafc', value: 1, initialWeight: 92, levelWeightIncrease: -2, typeWeightIncrease: -4 },
+    { name: 'Poco comun', color: '#4ade80', value: 2, initialWeight: 7, levelWeightIncrease: 1, typeWeightIncrease: 2 },
+    { name: 'Rara', color: '#60a5fa', value: 3, initialWeight: 0.8, levelWeightIncrease: 0.35, typeWeightIncrease: 0.8 },
+    { name: 'Epica', color: '#c084fc', value: 5, initialWeight: 0.15, levelWeightIncrease: 0.1, typeWeightIncrease: 0.25 },
+    { name: 'Legendaria', color: '#fbbf24', value: 7, initialWeight: 0.04, levelWeightIncrease: 0.035, typeWeightIncrease: 0.1 },
+    { name: 'Mitica', color: '#f87171', value: 10, initialWeight: 0.01, levelWeightIncrease: 0.01, typeWeightIncrease: 0.03 },
+] as const;
