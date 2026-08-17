@@ -1,0 +1,12 @@
+export const MAP_WIDTH = 2560;
+export const MAP_HEIGHT = 1600;
+export const PLAYER_SPEED = 280;
+export const ENEMY_SPEED = 120;
+export const PROJECTILE_SPEED = 540;
+export const PROJECTILE_LIFETIME = 1200;
+export const PROJECTILE_PIERCING = 0;
+export const AUTO_ATTACK_INTERVAL = 500;
+export const PLAYER_MAX_HEALTH = 5;
+export const ENEMY_MAX_HEALTH = 6;
+export const ENEMY_DAMAGE_COOLDOWN = 700;
+export const CONTROLLER_DEAD_ZONE = 0.2;

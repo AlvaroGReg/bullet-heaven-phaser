@@ -26,16 +26,19 @@ Para generar una version de produccion:
 npm run build
 ```
 
-## Estructura inicial
+## Estructura
 
 ```text
 src/
-  game/       Configuracion de Phaser
-  scenes/     Flujo y pantallas del juego
-  main.ts     Punto de entrada
+    entities/  Representacion fisica de jugador y enemigos
+    game/      Configuracion y constantes compartidas
+    scenes/    Flujo y pantallas del juego
+    systems/   Entrada y combate
+    world/     Creacion del mapa
+    main.ts    Punto de entrada
 ```
 
-Las carpetas para entidades, sistemas e interfaz se incorporaran cuando el juego tenga codigo que justifique separarlas.
+La escena coordina los sistemas y la interfaz; cada modulo contiene una responsabilidad jugable concreta.
 
 ## Agentes y skills
 

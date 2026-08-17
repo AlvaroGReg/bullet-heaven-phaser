@@ -7,7 +7,11 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     width: 1280,
     height: 720,
     backgroundColor: '#10151f',
+    disableContextMenu: true,
     scene: [GameScene],
+    input: {
+        gamepad: true,
+    },
     physics: {
         default: 'arcade',
         arcade: {
