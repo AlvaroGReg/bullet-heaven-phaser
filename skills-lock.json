@@ -7,6 +7,12 @@
       "skillPath": "skills/find-skills/SKILL.md",
       "computedHash": "b146008599c31057cef1c145774cea5d5afb30e8f43fa802e47a4b461419aaaf"
     },
+    "game-assets": {
+      "source": "playableintelligence/game-creator",
+      "sourceType": "github",
+      "skillPath": "skills/game-assets/SKILL.md",
+      "computedHash": "11874de3054e82b21db3b090e45f65555b7540b22b8de98f692a38d7324acda8"
+    },
     "phaser": {
       "source": "playableintelligence/game-creator",
       "sourceType": "github",
