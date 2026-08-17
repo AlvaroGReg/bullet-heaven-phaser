@@ -1,13 +1,10 @@
 import Phaser from 'phaser';
 import type { Enemy } from '../entities/createEnemy';
+import type { PlayerStats } from '../game/PlayerStats';
 import {
-    AUTO_ATTACK_INTERVAL,
     ENEMY_DAMAGE_COOLDOWN,
     ENEMY_SPEED,
     PLAYER_MAX_HEALTH,
-    PROJECTILE_LIFETIME,
-    PROJECTILE_PIERCING,
-    PROJECTILE_SPEED,
 } from '../game/constants';
 
 type Projectile = Phaser.GameObjects.Arc & {
@@ -18,6 +15,7 @@ type Projectile = Phaser.GameObjects.Arc & {
 type CombatCallbacks = {
     onPlayerHealthChanged: (health: number) => void;
     onPlayerDeath: () => void;
+    onEnemyDeath: (enemy: Enemy) => void;
 };
 
 export class CombatSystem {
@@ -51,9 +49,10 @@ export class CombatSystem {
         }
 
         projectile.hitEnemies.add(enemy);
-        enemy.health -= 1;
+        enemy.health -= this.stats.damage;
 
         if (enemy.health <= 0) {
+            this.callbacks.onEnemyDeath(enemy);
             enemy.destroy();
         }
 
@@ -66,6 +65,7 @@ export class CombatSystem {
         private readonly scene: Phaser.Scene,
         private readonly player: Phaser.GameObjects.Arc,
         private readonly enemies: Phaser.Physics.Arcade.Group,
+        private readonly stats: PlayerStats,
         private readonly callbacks: CombatCallbacks,
     ) {
         this.projectiles = this.scene.physics.add.group();
@@ -98,7 +98,7 @@ export class CombatSystem {
 
         if (this.autoAimEnabled && this.updateAutoAim() && this.scene.time.now >= this.nextAutoAttackAt) {
             this.attack(this.autoAimDirection);
-            this.nextAutoAttackAt = this.scene.time.now + AUTO_ATTACK_INTERVAL;
+            this.nextAutoAttackAt = this.scene.time.now + this.stats.attackInterval;
         }
     }
 
@@ -113,15 +113,15 @@ export class CombatSystem {
             ? this.autoAimDirection.set(target.x - this.player.x, target.y - this.player.y).normalize()
             : aimDirection;
         const projectile = this.scene.add.circle(this.player.x, this.player.y, 6, 0xffe28a) as Projectile;
-        projectile.piercing = PROJECTILE_PIERCING;
+        projectile.piercing = this.stats.projectilePiercing;
         projectile.hitEnemies = new Set();
         this.scene.physics.add.existing(projectile);
         this.projectiles.add(projectile);
 
         const body = projectile.body as Phaser.Physics.Arcade.Body;
-        body.setVelocity(direction.x * PROJECTILE_SPEED, direction.y * PROJECTILE_SPEED);
+        body.setVelocity(direction.x * this.stats.projectileSpeed, direction.y * this.stats.projectileSpeed);
 
-        this.scene.time.delayedCall(PROJECTILE_LIFETIME, () => {
+        this.scene.time.delayedCall(this.stats.projectileLifetime, () => {
             if (projectile.active) {
                 projectile.destroy();
             }

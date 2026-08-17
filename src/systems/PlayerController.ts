@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { CONTROLLER_DEAD_ZONE, PLAYER_SPEED } from '../game/constants';
+import { CONTROLLER_DEAD_ZONE } from '../game/constants';
+import type { PlayerStats } from '../game/PlayerStats';
 
 type PlayerControllerCallbacks = {
     attack: (aimDirection: Phaser.Math.Vector2) => void;
@@ -20,6 +21,7 @@ export class PlayerController {
     public constructor(
         private readonly scene: Phaser.Scene,
         private readonly player: Phaser.GameObjects.Arc,
+        private readonly stats: PlayerStats,
         private readonly callbacks: PlayerControllerCallbacks,
     ) {
         this.cursors = this.scene.input.keyboard!.createCursorKeys();
@@ -67,7 +69,7 @@ export class PlayerController {
         }
 
         const body = this.player.body as Phaser.Physics.Arcade.Body;
-        body.setVelocity(movement.x * PLAYER_SPEED, movement.y * PLAYER_SPEED);
+        body.setVelocity(movement.x * this.stats.movementSpeed, movement.y * this.stats.movementSpeed);
         this.updateAimDirection(gamepad);
 
         const gamepadAttackIsDown = gamepad?.A ?? false;

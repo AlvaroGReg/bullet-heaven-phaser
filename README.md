@@ -78,4 +78,4 @@ Al inicio no se implementaran ECS, object pooling, persistencia, metaprogresion,
 
 ## Siguiente paso
 
-Implementar gemas de experiencia, recogida y subida de nivel.
+Construir la interfaz de partida: vida, nivel, experiencia y temporizador.
