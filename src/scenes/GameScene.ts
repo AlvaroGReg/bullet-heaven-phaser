@@ -3,6 +3,7 @@ import { createEnemy } from '../entities/createEnemy';
 import { createPlayer } from '../entities/createPlayer';
 import { MAP_HEIGHT, MAP_WIDTH, PLAYER_MAX_HEALTH } from '../game/constants';
 import { CombatSystem } from '../systems/CombatSystem';
+import { EnemySpawner } from '../systems/EnemySpawner';
 import { PlayerController } from '../systems/PlayerController';
 import { createArena } from '../world/createArena';
 
@@ -14,6 +15,8 @@ export class GameScene extends Phaser.Scene {
     private combat!: CombatSystem;
 
     private controller!: PlayerController;
+
+    private enemySpawner!: EnemySpawner;
 
     private healthText!: Phaser.GameObjects.Text;
 
@@ -37,6 +40,7 @@ export class GameScene extends Phaser.Scene {
             attack: (aimDirection) => this.combat.attack(aimDirection),
             toggleAutoAim: () => this.combat.toggleAutoAim(),
         });
+        this.enemySpawner = new EnemySpawner(this, this.player, this.enemies);
 
         this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
         this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
@@ -80,6 +84,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.controller.update();
+        this.enemySpawner.update();
         this.combat.update();
     }
 

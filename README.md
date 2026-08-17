@@ -78,4 +78,4 @@ Al inicio no se implementaran ECS, object pooling, persistencia, metaprogresion,
 
 ## Siguiente paso
 
-Implementar el jugador y su movimiento dentro de `GameScene`.
+Implementar gemas de experiencia, recogida y subida de nivel.

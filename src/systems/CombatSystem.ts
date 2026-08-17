@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
+import type { Enemy } from '../entities/createEnemy';
 import {
     AUTO_ATTACK_INTERVAL,
     ENEMY_DAMAGE_COOLDOWN,
-    ENEMY_MAX_HEALTH,
     ENEMY_SPEED,
     PLAYER_MAX_HEALTH,
     PROJECTILE_LIFETIME,
@@ -27,8 +27,6 @@ export class CombatSystem {
 
     private playerHealth = PLAYER_MAX_HEALTH;
 
-    private enemyHealth = ENEMY_MAX_HEALTH;
-
     private nextPlayerDamageAt = 0;
 
     private nextAutoAttackAt = 0;
@@ -46,16 +44,16 @@ export class CombatSystem {
         const projectile = (this.projectiles.contains(firstGameObject)
             ? firstGameObject
             : secondGameObject) as Projectile;
-        const enemy = (projectile === firstGameObject ? secondGameObject : firstGameObject) as Phaser.GameObjects.Arc;
+        const enemy = (projectile === firstGameObject ? secondGameObject : firstGameObject) as Enemy;
 
         if (!projectile.active || !enemy.active || projectile.hitEnemies.has(enemy)) {
             return;
         }
 
         projectile.hitEnemies.add(enemy);
-        this.enemyHealth -= 1;
+        enemy.health -= 1;
 
-        if (this.enemyHealth <= 0) {
+        if (enemy.health <= 0) {
             enemy.destroy();
         }
 
@@ -91,7 +89,7 @@ export class CombatSystem {
 
     public update(): void {
         for (const gameObject of this.enemies.getChildren()) {
-            const enemy = gameObject as Phaser.GameObjects.Arc;
+            const enemy = gameObject as Enemy;
 
             if (enemy.active) {
                 this.scene.physics.moveToObject(enemy, this.player, ENEMY_SPEED);
@@ -146,12 +144,12 @@ export class CombatSystem {
         return true;
     }
 
-    private getClosestEnemy(): Phaser.GameObjects.Arc | undefined {
-        let closestEnemy: Phaser.GameObjects.Arc | undefined;
+    private getClosestEnemy(): Enemy | undefined {
+        let closestEnemy: Enemy | undefined;
         let shortestDistance = Number.POSITIVE_INFINITY;
 
         for (const gameObject of this.enemies.getChildren()) {
-            const enemy = gameObject as Phaser.GameObjects.Arc;
+            const enemy = gameObject as Enemy;
             const distance = Phaser.Math.Distance.Between(this.player.x, this.player.y, enemy.x, enemy.y);
 
             if (enemy.active && distance < shortestDistance) {
