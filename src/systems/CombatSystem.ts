@@ -3,13 +3,16 @@ import type { Enemy } from '../entities/createEnemy';
 import type { PlayerStats } from '../game/PlayerStats';
 import {
     ENEMY_DAMAGE_COOLDOWN,
-    ENEMY_SPEED,
     PLAYER_MAX_HEALTH,
 } from '../game/constants';
 
 type Projectile = Phaser.GameObjects.Arc & {
     piercing: number;
     hitEnemies: Set<Phaser.GameObjects.Arc>;
+};
+
+type EnemyProjectile = Phaser.GameObjects.Arc & {
+    damage: number;
 };
 
 type CombatCallbacks = {
@@ -20,6 +23,8 @@ type CombatCallbacks = {
 
 export class CombatSystem {
     private readonly projectiles: Phaser.Physics.Arcade.Group;
+
+    private readonly enemyProjectiles: Phaser.Physics.Arcade.Group;
 
     private readonly autoAimDirection = new Phaser.Math.Vector2();
 
@@ -49,15 +54,38 @@ export class CombatSystem {
         }
 
         projectile.hitEnemies.add(enemy);
-        enemy.health -= this.stats.damage;
-
-        if (enemy.health <= 0) {
-            this.callbacks.onEnemyDeath(enemy);
-            enemy.destroy();
-        }
+        this.damageEnemy(enemy, this.stats.damage);
 
         if (projectile.hitEnemies.size > projectile.piercing) {
             projectile.destroy();
+        }
+    };
+
+    private handleEnemyProjectileHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (
+        firstObject,
+        secondObject,
+    ) => {
+        const firstGameObject = firstObject as Phaser.GameObjects.GameObject;
+        const secondGameObject = secondObject as Phaser.GameObjects.GameObject;
+        const projectile = (this.enemyProjectiles.contains(firstGameObject)
+            ? firstGameObject
+            : secondGameObject) as EnemyProjectile;
+
+        if (!projectile.active) {
+            return;
+        }
+
+        projectile.destroy();
+        this.damagePlayer(projectile.damage);
+    };
+
+    private handlePlayerHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (firstObject, secondObject) => {
+        const firstGameObject = firstObject as Phaser.GameObjects.GameObject;
+        const secondGameObject = secondObject as Phaser.GameObjects.GameObject;
+        const enemy = (this.enemies.contains(firstGameObject) ? firstGameObject : secondGameObject) as Enemy;
+
+        if (enemy.active) {
+            this.damagePlayer(enemy.damage);
         }
     };
 
@@ -69,6 +97,7 @@ export class CombatSystem {
         private readonly callbacks: CombatCallbacks,
     ) {
         this.projectiles = this.scene.physics.add.group();
+        this.enemyProjectiles = this.scene.physics.add.group();
         this.scene.physics.add.overlap(
             this.projectiles,
             this.enemies,
@@ -77,6 +106,13 @@ export class CombatSystem {
             this,
         );
         this.scene.physics.add.overlap(this.player, this.enemies, this.handlePlayerHit, undefined, this);
+        this.scene.physics.add.overlap(
+            this.enemyProjectiles,
+            this.player,
+            this.handleEnemyProjectileHit,
+            undefined,
+            this,
+        );
     }
 
     public get health(): number {
@@ -92,7 +128,7 @@ export class CombatSystem {
             const enemy = gameObject as Enemy;
 
             if (enemy.active) {
-                this.scene.physics.moveToObject(enemy, this.player, ENEMY_SPEED);
+                this.updateEnemy(enemy);
             }
         }
 
@@ -161,13 +197,59 @@ export class CombatSystem {
         return closestEnemy;
     }
 
-    private handlePlayerHit(): void {
+    private updateEnemy(enemy: Enemy): void {
+        const distance = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+
+        if (enemy.ranged) {
+            if (distance > enemy.ranged.attackRange) {
+                this.scene.physics.moveToObject(enemy, this.player, enemy.speed);
+            } else {
+                const body = enemy.body as Phaser.Physics.Arcade.Body;
+                body.setVelocity(0);
+            }
+
+            if (distance <= enemy.ranged.attackRange && this.scene.time.now >= enemy.nextAttackAt) {
+                this.fireEnemyProjectile(enemy);
+                enemy.nextAttackAt = this.scene.time.now + enemy.ranged.attackInterval;
+            }
+
+            return;
+        }
+
+        this.scene.physics.moveToObject(enemy, this.player, enemy.speed);
+    }
+
+    private fireEnemyProjectile(enemy: Enemy): void {
+        const projectile = this.scene.add.circle(enemy.x, enemy.y, 5, 0xfb7185) as EnemyProjectile;
+        projectile.damage = enemy.damage;
+        this.scene.physics.add.existing(projectile);
+        this.enemyProjectiles.add(projectile);
+        this.scene.physics.moveToObject(projectile, this.player, enemy.ranged!.projectileSpeed);
+
+        this.scene.time.delayedCall(2500, () => {
+            if (projectile.active) {
+                projectile.destroy();
+            }
+        });
+    }
+
+    private damageEnemy(enemy: Enemy, damage: number): void {
+        const reducedDamage = enemy.armored ? damage * 0.8 : damage;
+        enemy.health -= reducedDamage;
+
+        if (enemy.health <= 0) {
+            this.callbacks.onEnemyDeath(enemy);
+            enemy.destroy();
+        }
+    }
+
+    private damagePlayer(damage: number): void {
         if (this.gameOver || this.scene.time.now < this.nextPlayerDamageAt) {
             return;
         }
 
         this.nextPlayerDamageAt = this.scene.time.now + ENEMY_DAMAGE_COOLDOWN;
-        this.playerHealth -= 1;
+        this.playerHealth -= damage;
         this.callbacks.onPlayerHealthChanged(this.playerHealth);
 
         if (this.playerHealth <= 0) {

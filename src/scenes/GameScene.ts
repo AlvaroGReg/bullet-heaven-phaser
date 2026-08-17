@@ -72,7 +72,14 @@ export class GameScene extends Phaser.Scene {
         this.combat = new CombatSystem(this, this.player, this.enemies, this.stats, {
             onPlayerHealthChanged: this.updateHealth,
             onPlayerDeath: this.endGame,
-            onEnemyDeath: (defeatedEnemy) => this.experience.spawn(defeatedEnemy.x, defeatedEnemy.y),
+            onEnemyDeath: (defeatedEnemy) => {
+                this.experience.spawn(
+                    defeatedEnemy.x,
+                    defeatedEnemy.y,
+                    defeatedEnemy.experienceMultiplier,
+                    defeatedEnemy.grantsFullLevel,
+                );
+            },
         });
         this.controller = new PlayerController(this, this.player, this.stats, {
             attack: (aimDirection) => {

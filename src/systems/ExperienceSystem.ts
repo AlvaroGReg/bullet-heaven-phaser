@@ -7,6 +7,7 @@ import {
 import type { PlayerStats } from '../game/PlayerStats';
 
 type ExperienceGem = Phaser.GameObjects.Arc & {
+    usesPlayerMultiplier: boolean;
     value: number;
 };
 
@@ -35,7 +36,8 @@ export class ExperienceSystem {
         }
 
         gem.destroy();
-        this.addExperience(gem.value * this.stats.experienceMultiplier);
+        const experience = gem.value * (gem.usesPlayerMultiplier ? this.stats.experienceMultiplier : 1);
+        this.addExperience(experience);
     };
 
     public constructor(
@@ -77,10 +79,11 @@ export class ExperienceSystem {
         }
     }
 
-    public spawn(x: number, y: number): void {
-        const gem = this.scene.add.circle(x, y, 10, 0x7dd3fc) as ExperienceGem;
-        gem.setStrokeStyle(2, 0xe0f2fe);
-        gem.value = EXPERIENCE_PER_GEM;
+    public spawn(x: number, y: number, multiplier: number, grantsFullLevel: boolean): void {
+        const gem = this.scene.add.circle(x, y, 10, grantsFullLevel ? 0xfbbf24 : 0x7dd3fc) as ExperienceGem;
+        gem.setStrokeStyle(2, grantsFullLevel ? 0xfef3c7 : 0xe0f2fe);
+        gem.usesPlayerMultiplier = !grantsFullLevel;
+        gem.value = grantsFullLevel ? this.currentRequiredExperience : EXPERIENCE_PER_GEM * multiplier;
         this.scene.physics.add.existing(gem);
         this.gems.add(gem);
     }
