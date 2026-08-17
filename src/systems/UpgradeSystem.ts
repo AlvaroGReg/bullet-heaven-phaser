@@ -89,19 +89,19 @@ export class UpgradeSystem {
 
     private createAttackSpeedUpgrade(level: number): Upgrade {
         return this.createUpgrade('attackSpeed', 'upgrade.attackSpeed', level, (value) => i18n.t('upgrade.attackSpeed.description', { value: value * 5 }), (value) => {
-            this.stats.attackInterval = Math.max(100, this.stats.attackInterval * (1 - value * 0.05));
+            this.stats.attackSpeedMultiplier += value * 0.05;
         });
     }
 
     private createProjectileSpeedUpgrade(level: number): Upgrade {
         return this.createUpgrade('projectileSpeed', 'upgrade.projectileSpeed', level, (value) => i18n.t('upgrade.projectileSpeed.description', { value: value * 40 }), (value) => {
-            this.stats.projectileSpeed += value * 40;
+            this.stats.projectileSpeedBonus += value * 40;
         });
     }
 
     private createProjectileLifetimeUpgrade(level: number): Upgrade {
         return this.createUpgrade('projectileLifetime', 'upgrade.projectileLifetime', level, (value) => i18n.t('upgrade.projectileLifetime.description', { value: value * 100 }), (value) => {
-            this.stats.projectileLifetime += value * 100;
+            this.stats.projectileLifetimeBonus += value * 100;
         });
     }
 

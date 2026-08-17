@@ -1,16 +1,25 @@
 export const MAP_WIDTH = 2560;
 export const MAP_HEIGHT = 1600;
-export const PLAYER_SPEED = 280;
 export const ENEMY_SPEED = 120;
-export const PROJECTILE_SPEED = 540;
-export const PROJECTILE_LIFETIME = 1200;
-export const PROJECTILE_PIERCING = 0;
-export const AUTO_ATTACK_INTERVAL = 500;
-export const PLAYER_MAX_HEALTH = 5;
+
+type PlayerInitialStats = {
+    maxHealth: number;
+    movementSpeed: number;
+};
+
+// These are the only base attributes defined by the player.
+export const PLAYER_INITIAL_STATS: PlayerInitialStats = {
+    maxHealth: 5,
+    movementSpeed: 180,
+};
+
 export const ENEMY_MAX_HEALTH = 6;
 export const ENEMY_DAMAGE_COOLDOWN = 700;
 export const ENEMY_SPAWN_PHASE_DURATION = 60_000;
-export const ELITE_SPAWN_INTERVAL = 60_000;
+export const ELITE_SPAWN_START_TIME = 2 * ENEMY_SPAWN_PHASE_DURATION;
+export const ELITE_SPAWN_INTERVAL = 75_000;
+export const ENEMY_HEALTH_GROWTH_PER_PHASE = 0.12;
+export const ENEMY_SPEED_GROWTH_PER_PHASE = 0.04;
 export const FIRST_BOSS_TIME = 5 * 60_000;
 export const FINAL_BOSS_TIME = 10 * 60_000;
 export const POST_FINAL_BOSS_PHASE_DURATION = 30_000;

@@ -14,8 +14,6 @@ export function grimTextStyle(color: string, fontSize: string): Phaser.Types.Gam
         fontFamily: 'monospace',
         fontSize,
         fontStyle: 'bold',
-        stroke: GRIM.ink,
-        strokeThickness: 3,
     };
 }
 

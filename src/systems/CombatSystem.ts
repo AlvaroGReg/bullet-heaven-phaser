@@ -2,12 +2,7 @@ import Phaser from 'phaser';
 import type { Enemy } from '../entities/createEnemy';
 import type { Player } from '../entities/createPlayer';
 import { DAGGER_TEXTURE } from '../sprites/rogue';
-import {
-    AUTO_ATTACK_INTERVAL,
-    ENEMY_DAMAGE_COOLDOWN,
-    PROJECTILE_LIFETIME,
-    PROJECTILE_SPEED,
-} from '../game/constants';
+import { ENEMY_DAMAGE_COOLDOWN } from '../game/constants';
 import type { PlayerStats } from '../game/PlayerStats';
 import { WEAPON_DEFINITIONS } from './WeaponSystem';
 import type { WeaponSystem } from './WeaponSystem';
@@ -235,10 +230,10 @@ export class CombatSystem {
         this.projectiles.add(projectile);
 
         const body = projectile.body as Phaser.Physics.Arcade.Body;
-        const projectileSpeed = definition.projectileSpeed + this.stats.projectileSpeed - PROJECTILE_SPEED;
+        const projectileSpeed = definition.projectileSpeed + this.stats.projectileSpeedBonus;
         body.setVelocity(direction.x * projectileSpeed, direction.y * projectileSpeed);
 
-        const lifetime = definition.lifetime + this.stats.projectileLifetime - PROJECTILE_LIFETIME;
+        const lifetime = definition.lifetime + this.stats.projectileLifetimeBonus;
         this.scene.time.delayedCall(lifetime, () => {
             if (projectile.active) {
                 projectile.destroy();
@@ -258,7 +253,7 @@ export class CombatSystem {
     }
 
     private getAttackInterval(weapon: keyof typeof WEAPON_DEFINITIONS): number {
-        return WEAPON_DEFINITIONS[weapon].attackInterval * (this.stats.attackInterval / AUTO_ATTACK_INTERVAL);
+        return WEAPON_DEFINITIONS[weapon].attackInterval / this.stats.attackSpeedMultiplier;
     }
 
     private getClosestEnemy(): Enemy | undefined {

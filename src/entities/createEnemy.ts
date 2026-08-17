@@ -27,7 +27,7 @@ export function createEnemy(
     y: number,
     kind: EnemyKind = 'normal',
     armored = false,
-    options: { healthMultiplier?: number; isFinalBoss?: boolean } = {},
+    options: { healthMultiplier?: number; isFinalBoss?: boolean; speedMultiplier?: number } = {},
 ): Enemy {
     const definition = ENEMY_DEFINITIONS[kind];
     const canBeArmored = kind === 'normal' || kind === 'heavy' || kind === 'elite';
@@ -43,7 +43,7 @@ export function createEnemy(
     enemy.radius = definition.radius;
     enemy.ranged = definition.ranged;
     enemy.nextAttackAt = 0;
-    enemy.speed = definition.speed;
+    enemy.speed = definition.speed * (options.speedMultiplier ?? 1);
     enemy.setStrokeStyle(enemy.armored ? 4 : 3, enemy.armored ? 0x94a3b8 : 0xffffff);
     scene.physics.add.existing(enemy);
 

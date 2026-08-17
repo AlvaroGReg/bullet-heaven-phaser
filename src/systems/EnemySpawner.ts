@@ -4,10 +4,13 @@ import type { Player } from '../entities/createPlayer';
 import type { EnemyKind } from '../entities/enemyTypes';
 import {
     ELITE_SPAWN_INTERVAL,
+    ELITE_SPAWN_START_TIME,
+    ENEMY_HEALTH_GROWTH_PER_PHASE,
     ENEMY_SPAWN_INITIAL_INTERVAL,
     ENEMY_SPAWN_INTERVAL_REDUCTION,
     ENEMY_SPAWN_MIN_INTERVAL,
     ENEMY_SPAWN_PHASE_DURATION,
+    ENEMY_SPEED_GROWTH_PER_PHASE,
     FINAL_BOSS_TIME,
     FIRST_BOSS_TIME,
     MAP_HEIGHT,
@@ -32,7 +35,7 @@ export class EnemySpawner {
         private readonly enemies: Phaser.Physics.Arcade.Group,
     ) {
         this.nextSpawnAt = this.scene.time.now + ENEMY_SPAWN_INITIAL_INTERVAL;
-        this.nextEliteAt = this.scene.time.now + ELITE_SPAWN_INTERVAL;
+        this.nextEliteAt = this.scene.time.now + ELITE_SPAWN_START_TIME;
     }
 
     public update(): void {
@@ -42,7 +45,11 @@ export class EnemySpawner {
             return;
         }
 
-        this.spawnEnemy();
+        const completedPhases = Math.floor(this.scene.time.now / ENEMY_SPAWN_PHASE_DURATION);
+        const enemiesPerSpawn = Math.min(1 + Math.floor(completedPhases / 2), 4);
+        for (let index = 0; index < enemiesPerSpawn; index += 1) {
+            this.spawnEnemy();
+        }
 
         const interval = this.finalBossSpawned
             ? Math.max(
@@ -75,32 +82,60 @@ export class EnemySpawner {
         }
     }
 
-    private spawnEnemy(kind?: EnemyKind, armored?: boolean, options?: { healthMultiplier?: number; isFinalBoss?: boolean }): void {
+    private spawnEnemy(
+        kind?: EnemyKind,
+        armored?: boolean,
+        options: { healthMultiplier?: number; isFinalBoss?: boolean } = {},
+    ): void {
         const completedPhases = Math.floor(this.scene.time.now / ENEMY_SPAWN_PHASE_DURATION);
         const choice = kind ? { armored: armored ?? false, kind } : this.chooseEnemy(completedPhases);
+        const scaling = {
+            healthMultiplier: (options.healthMultiplier ?? 1) * (1 + completedPhases * ENEMY_HEALTH_GROWTH_PER_PHASE),
+            isFinalBoss: options.isFinalBoss,
+            speedMultiplier: 1 + completedPhases * ENEMY_SPEED_GROWTH_PER_PHASE,
+        };
 
         for (let attempt = 0; attempt < 10; attempt += 1) {
             const x = Phaser.Math.Between(20, MAP_WIDTH - 20);
             const y = Phaser.Math.Between(20, MAP_HEIGHT - 20);
 
             if (Phaser.Math.Distance.Between(x, y, this.player.x, this.player.y) >= 180) {
-                this.enemies.add(createEnemy(this.scene, x, y, choice.kind, choice.armored, options));
+                this.enemies.add(createEnemy(this.scene, x, y, choice.kind, choice.armored, scaling));
                 return;
             }
         }
 
         const x = this.player.x < MAP_WIDTH / 2 ? MAP_WIDTH - 20 : 20;
         const y = this.player.y < MAP_HEIGHT / 2 ? MAP_HEIGHT - 20 : 20;
-        this.enemies.add(createEnemy(this.scene, x, y, choice.kind, choice.armored, options));
+        this.enemies.add(createEnemy(this.scene, x, y, choice.kind, choice.armored, scaling));
     }
 
     private chooseEnemy(completedPhases: number): { armored: boolean; kind: EnemyKind } {
-        const options: Array<{ kind: EnemyKind; weight: number }> = [
-            { kind: 'normal', weight: 60 },
-            { kind: 'fast', weight: 20 },
-            { kind: 'heavy', weight: 12 },
-            { kind: 'ranged', weight: 8 },
-        ];
+        const options: Array<{ kind: EnemyKind; weight: number }> = completedPhases === 0
+            ? [
+                { kind: 'normal', weight: 85 },
+                { kind: 'fast', weight: 15 },
+            ]
+            : completedPhases === 1
+                ? [
+                    { kind: 'normal', weight: 70 },
+                    { kind: 'fast', weight: 20 },
+                    { kind: 'heavy', weight: 10 },
+                ]
+                : completedPhases === 2
+                    ? [
+                        { kind: 'normal', weight: 55 },
+                        { kind: 'fast', weight: 25 },
+                        { kind: 'heavy', weight: 13 },
+                        { kind: 'ranged', weight: 7 },
+                    ]
+                    : [
+                        { kind: 'normal', weight: Math.max(30, 45 - (completedPhases - 3) * 5) },
+                        { kind: 'fast', weight: 25 },
+                        { kind: 'heavy', weight: Math.min(22, 17 + (completedPhases - 3) * 2) },
+                        { kind: 'ranged', weight: Math.min(15, 10 + (completedPhases - 3) * 2) },
+                        { kind: 'elite', weight: Math.min(12, 3 + (completedPhases - 3) * 3) },
+                    ];
 
         const totalWeight = options.reduce((total, option) => total + option.weight, 0);
         let roll = Math.random() * totalWeight;
