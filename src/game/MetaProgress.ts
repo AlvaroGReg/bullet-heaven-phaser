@@ -24,33 +24,62 @@ export const META_UPGRADES: readonly MetaUpgrade[] = [
 ];
 
 type StoredProgress = {
+    achievementProgress: Record<string, number>;
+    unlockedAchievements: string[];
     gold: number;
 };
 
 export class MetaProgress {
-    private gold = this.read().gold;
+    private progress = this.read();
+
+    private gold = this.progress.gold;
 
     public get currentGold(): number {
         return this.gold;
     }
 
+    public get achievementProgress(): Readonly<Record<string, number>> {
+        return this.progress.achievementProgress;
+    }
+
+    public get unlockedAchievements(): readonly string[] {
+        return this.progress.unlockedAchievements;
+    }
+
     public addGold(amount: number): void {
         this.gold += amount;
+        this.progress.gold = this.gold;
         this.store();
+    }
+
+    public setAchievementProgress(id: string, progress: number): void {
+        this.progress.achievementProgress[id] = progress;
+        this.store();
+    }
+
+    public unlockAchievement(id: string): void {
+        if (!this.progress.unlockedAchievements.includes(id)) {
+            this.progress.unlockedAchievements.push(id);
+            this.store();
+        }
     }
 
     private read(): StoredProgress {
         try {
             const savedProgress = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<StoredProgress>;
-            return { gold: Number.isFinite(savedProgress.gold) ? Math.max(0, savedProgress.gold!) : 0 };
+            return {
+                achievementProgress: savedProgress.achievementProgress ?? {},
+                unlockedAchievements: savedProgress.unlockedAchievements ?? [],
+                gold: Number.isFinite(savedProgress.gold) ? Math.max(0, savedProgress.gold!) : 0,
+            };
         } catch {
-            return { gold: 0 };
+            return { achievementProgress: {}, unlockedAchievements: [], gold: 0 };
         }
     }
 
     private store(): void {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify({ gold: this.gold }));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.progress));
         } catch {
             // Gold remains available for this browser session when storage is unavailable.
         }

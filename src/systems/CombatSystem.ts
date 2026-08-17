@@ -9,11 +9,13 @@ import {
 import type { PlayerStats } from '../game/PlayerStats';
 import { WEAPON_DEFINITIONS } from './WeaponSystem';
 import type { WeaponSystem } from './WeaponSystem';
+import type { WeaponKind } from './WeaponSystem';
 
 type Projectile = Phaser.GameObjects.Arc & {
     areaRadius: number;
     damage: number;
     piercing: number;
+    weapon: WeaponKind;
     hitEnemies: Set<Phaser.GameObjects.Arc>;
 };
 
@@ -24,7 +26,9 @@ type EnemyProjectile = Phaser.GameObjects.Arc & {
 type CombatCallbacks = {
     onPlayerHealthChanged: (health: number, maxHealth: number) => void;
     onPlayerDeath: () => void;
-    onEnemyDeath: (enemy: Enemy) => void;
+    onEnemyDeath: (enemy: Enemy, weapon: WeaponKind) => void;
+    onAreaImpact: (kills: number) => void;
+    onPlayerDamaged: (amount: number) => void;
 };
 
 export class CombatSystem {
@@ -58,10 +62,10 @@ export class CombatSystem {
         }
 
         projectile.hitEnemies.add(enemy);
-        this.damageEnemy(enemy, projectile.damage);
+        const primaryKill = this.damageEnemy(enemy, projectile.damage, projectile.weapon);
 
         if (projectile.areaRadius > 0) {
-            this.damageArea(projectile, enemy);
+            this.callbacks.onAreaImpact((primaryKill ? 1 : 0) + this.damageArea(projectile, enemy));
         }
 
         if (projectile.hitEnemies.size > projectile.piercing) {
@@ -199,6 +203,7 @@ export class CombatSystem {
         projectile.areaRadius = definition.areaRadius;
         projectile.damage = definition.damage + this.stats.damage - 1;
         projectile.piercing = definition.piercing + this.stats.projectilePiercing;
+        projectile.weapon = weapon;
         projectile.hitEnemies = new Set();
         this.scene.physics.add.existing(projectile);
         this.projectiles.add(projectile);
@@ -283,17 +288,21 @@ export class CombatSystem {
         });
     }
 
-    private damageEnemy(enemy: Enemy, damage: number): void {
+    private damageEnemy(enemy: Enemy, damage: number, weapon: WeaponKind): boolean {
         const reducedDamage = enemy.armored ? damage * 0.8 : damage;
         enemy.health -= reducedDamage;
 
         if (enemy.health <= 0) {
-            this.callbacks.onEnemyDeath(enemy);
+            this.callbacks.onEnemyDeath(enemy, weapon);
             enemy.destroy();
+            return true;
         }
+
+        return false;
     }
 
-    private damageArea(projectile: Projectile, hitEnemy: Enemy): void {
+    private damageArea(projectile: Projectile, hitEnemy: Enemy): number {
+        let kills = 0;
         for (const gameObject of this.enemies.getChildren()) {
             const enemy = gameObject as Enemy;
 
@@ -304,9 +313,13 @@ export class CombatSystem {
                 && Phaser.Math.Distance.Between(projectile.x, projectile.y, enemy.x, enemy.y) <= projectile.areaRadius
             ) {
                 projectile.hitEnemies.add(enemy);
-                this.damageEnemy(enemy, projectile.damage);
+                if (this.damageEnemy(enemy, projectile.damage, projectile.weapon)) {
+                    kills += 1;
+                }
             }
         }
+
+        return kills;
     }
 
     private regeneratePlayer(delta: number): void {
@@ -327,7 +340,9 @@ export class CombatSystem {
         }
 
         this.nextPlayerDamageAt = this.scene.time.now + ENEMY_DAMAGE_COOLDOWN;
+        const lostHealth = Math.min(damage, this.playerHealth);
         this.playerHealth -= damage;
+        this.callbacks.onPlayerDamaged(lostHealth);
         this.callbacks.onPlayerHealthChanged(this.playerHealth, this.stats.maxHealth);
 
         if (this.playerHealth <= 0) {

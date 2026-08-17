@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
+import { ACHIEVEMENTS } from '../game/Achievements';
+import type { AchievementDefinition } from '../game/Achievements';
 import { META_UPGRADES, metaProgress } from '../game/MetaProgress';
 import { PLAYER_CHARACTERS } from '../game/playerCharacters';
 import type { PlayerCharacter } from '../game/playerCharacters';
 import { i18n } from '../i18n';
 import type { Locale } from '../i18n';
 
-type MenuView = 'main' | 'characters' | 'meta';
+type MenuView = 'achievements' | 'main' | 'characters' | 'meta';
 
 export class MenuScene extends Phaser.Scene {
     private objects: Phaser.GameObjects.GameObject[] = [];
@@ -15,6 +17,8 @@ export class MenuScene extends Phaser.Scene {
     private selectedCharacter: PlayerCharacter = PLAYER_CHARACTERS[0];
 
     private languageMenuOpen = false;
+
+    private achievementPage = 0;
 
     private removeLanguageListener?: () => void;
 
@@ -39,7 +43,9 @@ export class MenuScene extends Phaser.Scene {
             0x080b10,
         ).setDepth(-1));
 
-        if (this.view === 'characters') {
+        if (this.view === 'achievements') {
+            this.renderAchievements();
+        } else if (this.view === 'characters') {
             this.renderCharacterSelection();
         } else if (this.view === 'meta') {
             this.renderMetaProgression();
@@ -59,6 +65,10 @@ export class MenuScene extends Phaser.Scene {
         }, '#2563eb');
         this.addButton(i18n.t('menu.metaProgression'), 410, () => {
             this.view = 'meta';
+            this.render();
+        }, '#475569');
+        this.addButton(i18n.t('achievement.title'), 490, () => {
+            this.view = 'achievements';
             this.render();
         }, '#475569');
     }
@@ -122,6 +132,85 @@ export class MenuScene extends Phaser.Scene {
             this.view = 'main';
             this.render();
         }, '#475569');
+    }
+
+    private renderAchievements(): void {
+        const unlockedCount = metaProgress.unlockedAchievements.length;
+        const pageSize = 16;
+        const pageCount = Math.ceil(ACHIEVEMENTS.length / pageSize);
+        const pageAchievements = ACHIEVEMENTS.slice(this.achievementPage * pageSize, (this.achievementPage + 1) * pageSize);
+        this.addTitle(i18n.t('achievement.title'), 70);
+        this.addLabel(
+            `${i18n.t('achievement.summary', { completed: unlockedCount, total: ACHIEVEMENTS.length })} · ${i18n.t('achievement.page', { current: this.achievementPage + 1, total: pageCount })}`,
+            115,
+            '#fcd34d',
+        );
+
+        for (let column = 0; column < 4; column += 1) {
+            const text = pageAchievements.filter((_, index) => index % 4 === column).map((achievement) => {
+                const progress = metaProgress.achievementProgress[achievement.id] ?? 0;
+                const unlocked = metaProgress.unlockedAchievements.includes(achievement.id);
+                const isTimeAchievement = achievement.metric === 'survivalRun'
+                    || achievement.metric === 'survivalTotal'
+                    || achievement.metric === 'playTime'
+                    || achievement.metric === 'survivalWithoutUpgrades';
+                const status = unlocked
+                    ? i18n.t('achievement.unlocked')
+                    : i18n.t('achievement.progress', {
+                        current: Math.floor(isTimeAchievement ? progress / 60 : progress),
+                        target: isTimeAchievement ? achievement.target / 60 : achievement.target,
+                    });
+                return `${this.getAchievementLabel(achievement)}\n${status}`;
+            }).join('\n\n');
+            this.addObject(this.add.text(175 + column * 310, 365, text, {
+                align: 'center', backgroundColor: '#1e293b', color: '#e2e8f0', fontFamily: 'system-ui, sans-serif', fontSize: '13px',
+                wordWrap: { width: 260 },
+            }).setOrigin(0.5).setFixedSize(280, 450).setPadding(12));
+        }
+
+        if (this.achievementPage > 0) {
+            this.addButton(i18n.t('achievement.previous'), 650, () => {
+                this.achievementPage -= 1;
+                this.render();
+            }, '#475569', this.scale.width / 2 - 180);
+        }
+        if (this.achievementPage < pageCount - 1) {
+            this.addButton(i18n.t('achievement.next'), 650, () => {
+                this.achievementPage += 1;
+                this.render();
+            }, '#475569', this.scale.width / 2 + 180);
+        }
+        this.addButton(i18n.t('menu.back'), 650, () => {
+            this.view = 'main';
+            this.render();
+        }, '#475569');
+    }
+
+    private getAchievementLabel(achievement: AchievementDefinition): string {
+        if (achievement.metric === 'finalBossBefore') {
+            return i18n.t('achievement.metric.finalBossBefore', { time: this.formatAchievementTime(achievement.deadlineSeconds!) });
+        }
+
+        if (achievement.metric === 'gameCompletedLowHealth') {
+            return i18n.t('achievement.metric.gameCompletedLowHealth', { value: achievement.healthThreshold! });
+        }
+
+        const value = achievement.metric === 'survivalRun' || achievement.metric === 'survivalTotal' || achievement.metric === 'playTime'
+            || achievement.metric === 'survivalWithoutUpgrades'
+            ? achievement.target / 60
+            : achievement.target;
+        const values = {
+            enemy: achievement.enemyKind ? i18n.t(`enemy.${achievement.enemyKind}`) : '',
+            stat: achievement.stat ? i18n.t(`stat.${achievement.stat}`) : '',
+            value,
+            weapon: achievement.weapon ? i18n.t(`weapon.${achievement.weapon}`) : '',
+        };
+        return i18n.t(`achievement.metric.${achievement.metric}`, values);
+    }
+
+    private formatAchievementTime(seconds: number): string {
+        const minutes = Math.floor(seconds / 60);
+        return `${minutes}:${(seconds % 60).toString().padStart(2, '0')}`;
     }
 
     private addTitle(text: string, y: number): void {

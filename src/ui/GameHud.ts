@@ -29,7 +29,7 @@ export class GameHud {
 
     private menuObjects: Phaser.GameObjects.GameObject[] = [];
 
-    private menuState: 'gameOver' | 'pause' | 'restartConfirmation' | undefined;
+    private menuState: 'gameOver' | 'pause' | 'restartConfirmation' | 'victory' | undefined;
 
     private currentLevel: number;
 
@@ -150,6 +150,15 @@ export class GameHud {
         this.addMenuButton(i18n.t('menu.main'), 450, this.callbacks.onMainMenu, '#475569');
     }
 
+    public showVictory(): void {
+        this.controlsText.setVisible(false);
+        this.clearMenu();
+        this.menuState = 'victory';
+        this.addMenuBackground();
+        this.addMenuTitle(i18n.t('win.title'), 280);
+        this.addMenuButton(i18n.t('menu.main'), 400, this.callbacks.onMainMenu, '#2563eb');
+    }
+
     private getExperienceLabel(level: number): string {
         return i18n.t('hud.level', { level });
     }
@@ -265,6 +274,8 @@ export class GameHud {
 
         if (this.menuState === 'gameOver') {
             this.showGameOver();
+        } else if (this.menuState === 'victory') {
+            this.showVictory();
         } else if (this.menuState === 'pause') {
             this.showPauseMenu();
         } else if (this.menuState === 'restartConfirmation') {

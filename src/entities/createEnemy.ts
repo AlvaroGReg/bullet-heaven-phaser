@@ -9,6 +9,7 @@ export type Enemy = Phaser.GameObjects.Arc & {
     goldDropChance: number;
     grantsFullLevel: boolean;
     health: number;
+    isFinalBoss: boolean;
     kind: EnemyKind;
     radius: number;
     ranged?: {
@@ -20,7 +21,14 @@ export type Enemy = Phaser.GameObjects.Arc & {
     speed: number;
 };
 
-export function createEnemy(scene: Phaser.Scene, x: number, y: number, kind: EnemyKind = 'normal', armored = false): Enemy {
+export function createEnemy(
+    scene: Phaser.Scene,
+    x: number,
+    y: number,
+    kind: EnemyKind = 'normal',
+    armored = false,
+    options: { healthMultiplier?: number; isFinalBoss?: boolean } = {},
+): Enemy {
     const definition = ENEMY_DEFINITIONS[kind];
     const canBeArmored = kind === 'normal' || kind === 'heavy' || kind === 'elite';
     const enemy = scene.add.circle(x, y, definition.radius, definition.color) as Enemy;
@@ -29,7 +37,8 @@ export function createEnemy(scene: Phaser.Scene, x: number, y: number, kind: Ene
     enemy.experienceMultiplier = definition.experienceMultiplier * (enemy.armored ? 1.2 : 1);
     enemy.goldDropChance = definition.goldDropChance;
     enemy.grantsFullLevel = definition.grantsFullLevel ?? false;
-    enemy.health = definition.health;
+    enemy.health = definition.health * (options.healthMultiplier ?? 1);
+    enemy.isFinalBoss = options.isFinalBoss ?? false;
     enemy.kind = kind;
     enemy.radius = definition.radius;
     enemy.ranged = definition.ranged;

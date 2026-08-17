@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { createEnemy } from '../entities/createEnemy';
 import { createPlayer } from '../entities/createPlayer';
 import { MAP_HEIGHT, MAP_WIDTH } from '../game/constants';
+import { AchievementSystem } from '../game/Achievements';
 import { metaProgress } from '../game/MetaProgress';
 import { PLAYER_CHARACTERS } from '../game/playerCharacters';
 import type { PlayerCharacter } from '../game/playerCharacters';
@@ -24,6 +25,8 @@ export class GameScene extends Phaser.Scene {
     private enemies!: Phaser.Physics.Arcade.Group;
 
     private combat!: CombatSystem;
+
+    private achievements!: AchievementSystem;
 
     private controller!: PlayerController;
 
@@ -59,6 +62,8 @@ export class GameScene extends Phaser.Scene {
 
     private character: PlayerCharacter = PLAYER_CHARACTERS[0];
 
+    private completed = false;
+
     public constructor() {
         super('game');
     }
@@ -73,6 +78,7 @@ export class GameScene extends Phaser.Scene {
         this.gamepadStartWasDown = false;
         this.upgradeSelectionActive = false;
         this.pendingUpgradeSelections = 0;
+        this.completed = false;
         createArena(this);
 
         this.player = createPlayer(this, MAP_WIDTH / 2, MAP_HEIGHT / 2, this.character);
@@ -81,19 +87,30 @@ export class GameScene extends Phaser.Scene {
         this.enemies.add(enemy);
 
         this.stats = new PlayerStats();
+        this.achievements = new AchievementSystem();
         this.weapons = new WeaponSystem();
         this.experience = new ExperienceSystem(this, this.player, this.stats, {
-            onExperienceChanged: this.updateExperience,
+            onExperienceChanged: (level, experience, requiredExperience) => {
+                this.achievements.recordLevel(level);
+                this.updateExperience(level, experience, requiredExperience);
+            },
             onLevelUp: this.queueUpgradeSelection,
         });
         this.currency = new CurrencySystem(this, this.player, (amount) => {
             metaProgress.addGold(amount);
+            this.achievements.recordCoinCollected(amount);
             this.hud.setGold(metaProgress.currentGold);
         });
         this.combat = new CombatSystem(this, this.player, this.enemies, this.stats, this.weapons, {
             onPlayerHealthChanged: this.updateHealth,
-            onPlayerDeath: this.endGame,
-            onEnemyDeath: (defeatedEnemy) => {
+            onPlayerDeath: () => {
+                this.achievements.recordDeath();
+                this.endGame();
+            },
+            onPlayerDamaged: this.achievements.recordDamageTaken,
+            onAreaImpact: this.achievements.recordAreaImpact,
+            onEnemyDeath: (defeatedEnemy, weapon) => {
+                this.achievements.recordKill(defeatedEnemy.kind, weapon);
                 this.experience.spawn(
                     defeatedEnemy.x,
                     defeatedEnemy.y,
@@ -101,6 +118,9 @@ export class GameScene extends Phaser.Scene {
                     defeatedEnemy.grantsFullLevel,
                 );
                 this.currency.trySpawn(defeatedEnemy.x, defeatedEnemy.y, defeatedEnemy.goldDropChance);
+                if (defeatedEnemy.isFinalBoss) {
+                    this.completeGame();
+                }
             },
         });
         this.upgrades = new UpgradeSystem(
@@ -145,11 +165,12 @@ export class GameScene extends Phaser.Scene {
     public update(_time: number, delta: number): void {
         this.updatePauseInput();
 
-        if (this.combat.isGameOver || this.paused || this.upgradeSelectionActive) {
+        if (this.combat.isGameOver || this.completed || this.paused || this.upgradeSelectionActive) {
             return;
         }
 
         this.hud.update(delta);
+        this.achievements.update(delta);
         this.controller.update();
         this.experience.update();
 
@@ -229,6 +250,11 @@ export class GameScene extends Phaser.Scene {
 
     private selectUpgrade(upgrade: Upgrade): void {
         upgrade.apply();
+        this.achievements.recordUpgradeSelected();
+        this.achievements.recordStats(this.stats);
+        if (upgrade.type === 'weapon') {
+            this.achievements.recordWeaponsEquipped(this.weapons.weapons.length - 1);
+        }
         this.upgradeOverlay?.destroy();
         this.upgradeOverlay = undefined;
         this.upgradeTitle?.destroy();
@@ -261,7 +287,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     private togglePause(): void {
-        if (this.combat.isGameOver || this.upgradeSelectionActive) {
+        if (this.combat.isGameOver || this.completed || this.upgradeSelectionActive) {
             return;
         }
 
@@ -297,4 +323,13 @@ export class GameScene extends Phaser.Scene {
         this.player.setFillStyle(0x5c6670);
         this.hud.showGameOver();
     };
+
+    private completeGame(): void {
+        this.completed = true;
+        this.achievements.recordVictory(this.time.now / 1000, this.combat.health);
+        this.physics.pause();
+        this.time.paused = true;
+        this.player.setFillStyle(0x60a5fa);
+        this.hud.showVictory();
+    }
 }
