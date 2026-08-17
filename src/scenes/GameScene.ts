@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { createEnemy } from '../entities/createEnemy';
 import { createPlayer } from '../entities/createPlayer';
-import { MAP_HEIGHT, MAP_WIDTH, PLAYER_MAX_HEALTH } from '../game/constants';
+import { MAP_HEIGHT, MAP_WIDTH } from '../game/constants';
 import { PlayerStats } from '../game/PlayerStats';
 import { CombatSystem } from '../systems/CombatSystem';
 import { EnemySpawner } from '../systems/EnemySpawner';
@@ -9,6 +9,7 @@ import { ExperienceSystem } from '../systems/ExperienceSystem';
 import { PlayerController } from '../systems/PlayerController';
 import { UpgradeSystem } from '../systems/UpgradeSystem';
 import type { Upgrade } from '../systems/UpgradeSystem';
+import { GameHud } from '../ui/GameHud';
 import { createArena } from '../world/createArena';
 
 export class GameScene extends Phaser.Scene {
@@ -28,11 +29,7 @@ export class GameScene extends Phaser.Scene {
 
     private upgrades!: UpgradeSystem;
 
-    private healthText!: Phaser.GameObjects.Text;
-
-    private experienceText!: Phaser.GameObjects.Text;
-
-    private pauseText!: Phaser.GameObjects.Text;
+    private hud!: GameHud;
 
     private pauseKey!: Phaser.Input.Keyboard.Key;
 
@@ -55,6 +52,10 @@ export class GameScene extends Phaser.Scene {
     }
 
     public create(): void {
+        this.paused = false;
+        this.gamepadStartWasDown = false;
+        this.upgradeSelectionActive = false;
+        this.pendingUpgradeSelections = 0;
         createArena(this);
 
         this.player = createPlayer(this, MAP_WIDTH / 2, MAP_HEIGHT / 2);
@@ -91,85 +92,38 @@ export class GameScene extends Phaser.Scene {
         this.cameras.main.setBounds(0, 0, MAP_WIDTH, MAP_HEIGHT);
         this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
-        this.healthText = this.add
-            .text(24, 20, `Vida: ${this.combat.health}/${PLAYER_MAX_HEALTH}`, {
-                color: '#d3dce5',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '18px',
-            })
-            .setScrollFactor(0);
-
-        this.experienceText = this.add
-            .text(
-                24,
-                44,
-                `Nivel: ${this.experience.currentLevel}  EXP: ${this.formatExperience(this.experience.currentExperience)}/${this.experience.currentRequiredExperience}`,
-                {
-                    color: '#bae6fd',
-                    fontFamily: 'system-ui, sans-serif',
-                    fontSize: '18px',
-                },
-            )
-            .setScrollFactor(0);
-
-        this.add
-            .text(24, 76, 'Muevete con WASD, flechas, cruceta o stick izquierdo', {
-                color: '#aebac6',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '16px',
-            })
-            .setScrollFactor(0);
-
-        this.add
-            .text(24, 100, 'Apunta con raton o stick derecho. Dispara con click o A / X.', {
-                color: '#aebac6',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '16px',
-            })
-            .setScrollFactor(0);
-
-        this.add
-            .text(24, 124, 'Activa el modo automatico con click secundario o B / O.', {
-                color: '#aebac6',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '16px',
-            })
-            .setScrollFactor(0);
-
-        this.pauseText = this.add
-            .text(this.scale.width / 2, this.scale.height / 2, 'Pausado\nESC o Start para continuar', {
-                align: 'center',
-                color: '#ffffff',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '40px',
-            })
-            .setOrigin(0.5)
-            .setScrollFactor(0)
-            .setVisible(false);
+        this.hud = new GameHud(
+            this,
+            this.combat.health,
+            this.experience.currentLevel,
+            this.experience.currentExperience,
+            this.experience.currentRequiredExperience,
+            {
+                onResume: this.resumeGame,
+                onRestart: this.restartGame,
+            },
+        );
     }
 
-    public update(): void {
+    public update(_time: number, delta: number): void {
         this.updatePauseInput();
 
         if (this.combat.isGameOver || this.paused || this.upgradeSelectionActive) {
             return;
         }
 
+        this.hud.update(delta);
         this.controller.update();
         this.enemySpawner.update();
         this.combat.update();
     }
 
     private updateHealth = (health: number): void => {
-        this.healthText.setText(`Vida: ${Math.max(health, 0)}/${PLAYER_MAX_HEALTH}`);
+        this.hud.setHealth(health);
     };
 
     private updateExperience = (level: number, experience: number, requiredExperience: number): void => {
-        this.experienceText.setText(`Nivel: ${level}  EXP: ${this.formatExperience(experience)}/${requiredExperience}`);
-    };
-
-    private formatExperience(experience: number): string {
-        return Number.isInteger(experience) ? `${experience}` : experience.toFixed(1);
+        this.hud.setExperience(level, experience, requiredExperience);
     }
 
     private queueUpgradeSelection = (): void => {
@@ -262,7 +216,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.paused = !this.paused;
-        this.pauseText.setVisible(this.paused);
+        this.hud.setPaused(this.paused);
 
         if (this.paused) {
             this.physics.pause();
@@ -271,17 +225,19 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    private resumeGame = (): void => {
+        if (this.paused) {
+            this.togglePause();
+        }
+    };
+
+    private restartGame = (): void => {
+        this.scene.restart();
+    };
+
     private endGame = (): void => {
         this.physics.pause();
         this.player.setFillStyle(0x5c6670);
-
-        this.add
-            .text(this.scale.width / 2, this.scale.height / 2, 'Has muerto', {
-                color: '#ffffff',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '48px',
-            })
-            .setOrigin(0.5)
-            .setScrollFactor(0);
+        this.hud.showGameOver();
     };
 }

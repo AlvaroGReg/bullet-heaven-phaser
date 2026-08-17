@@ -34,6 +34,7 @@ src/
     game/      Configuracion y constantes compartidas
     scenes/    Flujo y pantallas del juego
     systems/   Entrada y combate
+    ui/        Interfaz de partida
     world/     Creacion del mapa
     main.ts    Punto de entrada
 ```
@@ -75,7 +76,3 @@ OpenCode carga `.agents/AGENTS.md`, las skills y los roles mediante `opencode.js
 ## Limites intencionales
 
 Al inicio no se implementaran ECS, object pooling, persistencia, metaprogresion, multijugador ni optimizaciones para miles de entidades. Se anadiran unicamente cuando el aprendizaje o una limitacion real del prototipo lo requieran.
-
-## Siguiente paso
-
-Construir la interfaz de partida: vida, nivel, experiencia y temporizador.
