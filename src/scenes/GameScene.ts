@@ -107,8 +107,8 @@ export class GameScene extends Phaser.Scene {
                 this.achievements.recordDeath();
                 this.endGame();
             },
-            onPlayerDamaged: this.achievements.recordDamageTaken,
-            onAreaImpact: this.achievements.recordAreaImpact,
+            onPlayerDamaged: (amount) => this.achievements.recordDamageTaken(amount),
+            onAreaImpact: (kills) => this.achievements.recordAreaImpact(kills),
             onEnemyDeath: (defeatedEnemy, weapon) => {
                 this.achievements.recordKill(defeatedEnemy.kind, weapon);
                 this.experience.spawn(
