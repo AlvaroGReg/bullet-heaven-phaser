@@ -37,6 +37,23 @@ src/
 
 Las carpetas para entidades, sistemas e interfaz se incorporaran cuando el juego tenga codigo que justifique separarlas.
 
+## Agentes y skills
+
+La configuracion de agentes se centraliza en `.agents/`:
+
+- `.agents/AGENTS.md`: instrucciones comunes y politica de uso de skills.
+- `.agents/agents/`: roles reutilizables para implementacion, planificacion y revision.
+- `.agents/skills/`: skills instaladas con `npx skills add`.
+- `skills-lock.json`: registro reproducible de las skills instaladas.
+
+Los roles disponibles son:
+
+- `phaser-implementer`: implementa incrementos pequenos y ejecuta la compilacion.
+- `gameplay-planner`: divide una mecanica en pasos jugables sin modificar codigo.
+- `code-reviewer`: revisa cambios en busca de errores, regresiones y pruebas faltantes.
+
+OpenCode carga `.agents/AGENTS.md`, las skills y los roles mediante `opencode.json`. Reinicialo despues de modificar esta configuracion, los roles o las skills.
+
 ## Ruta de desarrollo
 
 1. Mantener una escena base que cargue correctamente en el navegador.

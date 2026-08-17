@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "b146008599c31057cef1c145774cea5d5afb30e8f43fa802e47a4b461419aaaf"
+    },
+    "phaser": {
+      "source": "playableintelligence/game-creator",
+      "sourceType": "github",
+      "skillPath": "skills/phaser/SKILL.md",
+      "computedHash": "db2dacd817400cb9f5f87132081909ed8d3a11663c0ee126562b8d7204b097c2"
+    },
+    "phaser-arcade-physics": {
+      "source": "gamedev-skills/awesome-gamedev-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/web-engines/phaser-arcade-physics/SKILL.md",
+      "computedHash": "5e01f84e7d8c07d7de424b9734de8431446c4a6fb555bdbc965ab622f375b324"
+    }
+  }
+}
