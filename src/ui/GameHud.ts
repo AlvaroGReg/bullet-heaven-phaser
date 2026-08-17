@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { i18n } from '../i18n';
+import type { Locale } from '../i18n';
 
 const CONTROLS_DURATION = 10_000;
 const BAR_WIDTH = 260;
@@ -24,6 +26,12 @@ export class GameHud {
 
     private menuObjects: Phaser.GameObjects.GameObject[] = [];
 
+    private menuState: 'gameOver' | 'pause' | 'restartConfirmation' | undefined;
+
+    private currentLevel: number;
+
+    private removeLanguageListener: () => void;
+
     public constructor(
         private readonly scene: Phaser.Scene,
         health: number,
@@ -33,6 +41,7 @@ export class GameHud {
         requiredExperience: number,
         private readonly callbacks: GameHudCallbacks,
     ) {
+        this.currentLevel = level;
         this.scene.add
             .rectangle(24, 20, BAR_WIDTH, BAR_HEIGHT, 0x193127)
             .setOrigin(0)
@@ -63,7 +72,7 @@ export class GameHud {
         this.setExperience(level, experience, requiredExperience);
 
         this.timerText = this.scene.add
-            .text(this.scene.scale.width - 24, 20, 'Tiempo: 00:00', this.textStyle('#f2f5f7', '18px'))
+            .text(this.scene.scale.width - 24, 20, this.getTimerLabel(), this.textStyle('#f2f5f7', '18px'))
             .setOrigin(1, 0)
             .setScrollFactor(0);
 
@@ -71,18 +80,19 @@ export class GameHud {
             .text(
                 24,
                 88,
-                'Muevete con WASD, flechas, cruceta o stick izquierdo\n'
-                    + 'Apunta con raton o stick derecho. Dispara con click o A / X.\n'
-                    + 'Modo automatico: click secundario o B / O.',
+                this.getControlsText(),
                 this.textStyle('#aebac6', '16px'),
             )
             .setScrollFactor(0);
+
+        this.removeLanguageListener = i18n.onChange(() => this.updateLanguage());
+        this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
 
     }
 
     public update(delta: number): void {
         this.elapsed += delta;
-        this.timerText.setText(`Tiempo: ${this.formatTime(this.elapsed)}`);
+        this.timerText.setText(this.getTimerLabel());
 
         if (this.elapsed >= CONTROLS_DURATION) {
             this.controlsText.setVisible(false);
@@ -97,6 +107,7 @@ export class GameHud {
     public setExperience(level: number, experience: number, requiredExperience: number): void {
         const progress = Phaser.Math.Clamp(experience / requiredExperience, 0, 1);
         this.experienceFill.setDisplaySize(BAR_WIDTH * progress, BAR_HEIGHT);
+        this.currentLevel = level;
         this.experienceLabel.setText(this.getExperienceLabel(level));
     }
 
@@ -108,35 +119,50 @@ export class GameHud {
             this.showPauseMenu();
         } else {
             this.clearMenu();
+            this.menuState = undefined;
         }
     }
 
     public showGameOver(): void {
         this.controlsText.setVisible(false);
         this.clearMenu();
+        this.menuState = 'gameOver';
         this.addMenuBackground();
-        this.addMenuTitle('Has muerto', 280);
-        this.addMenuButton('Volver a empezar', 380, this.callbacks.onRestart, '#7f1d1d');
+        this.addMenuTitle(i18n.t('gameover.title'), 280);
+        this.addMenuButton(i18n.t('pause.restart'), 380, this.callbacks.onRestart, '#7f1d1d');
     }
 
     private getExperienceLabel(level: number): string {
-        return `Nivel: ${level}`;
+        return i18n.t('hud.level', { level });
+    }
+
+    private getTimerLabel(): string {
+        return i18n.t('hud.time', { time: this.formatTime(this.elapsed) });
+    }
+
+    private getControlsText(): string {
+        return [i18n.t('controls.move'), i18n.t('controls.aim'), i18n.t('controls.auto')].join('\n');
     }
 
     private showPauseMenu(): void {
         this.clearMenu();
+        this.menuState = 'pause';
         this.addMenuBackground();
-        this.addMenuTitle('Pausado', 260);
-        this.addMenuButton('Continuar', 340, this.callbacks.onResume, '#1d4ed8');
-        this.addMenuButton('Volver a empezar', 410, this.showRestartConfirmation, '#7f1d1d');
+        this.addMenuTitle(i18n.t('pause.title'), 250);
+        this.addMenuButton(i18n.t('pause.continue'), 330, this.callbacks.onResume, '#1d4ed8');
+        this.addMenuButton(i18n.t('pause.restart'), 400, this.showRestartConfirmation, '#7f1d1d');
+        this.addMenuLabel(i18n.t('language.title'), 475);
+        this.addMenuButton(i18n.t('language.spanish'), 520, () => this.setLocale('es'), '#475569', 530);
+        this.addMenuButton(i18n.t('language.english'), 520, () => this.setLocale('en'), '#475569', 750);
     }
 
     private showRestartConfirmation = (): void => {
         this.clearMenu();
+        this.menuState = 'restartConfirmation';
         this.addMenuBackground();
-        this.addMenuTitle('Volver a empezar desde cero?', 280);
-        this.addMenuButton('Si, reiniciar', 360, this.callbacks.onRestart, '#7f1d1d');
-        this.addMenuButton('No, continuar', 430, () => this.showPauseMenu(), '#1d4ed8');
+        this.addMenuTitle(i18n.t('pause.restartQuestion'), 280);
+        this.addMenuButton(i18n.t('pause.restartConfirm'), 360, this.callbacks.onRestart, '#7f1d1d');
+        this.addMenuButton(i18n.t('pause.restartCancel'), 430, () => this.showPauseMenu(), '#1d4ed8');
     };
 
     private addMenuBackground(): void {
@@ -170,10 +196,20 @@ export class GameHud {
         );
     }
 
-    private addMenuButton(text: string, y: number, callback: () => void, color: string): void {
+    private addMenuLabel(text: string, y: number): void {
         this.menuObjects.push(
             this.scene.add
-                .text(this.scene.scale.width / 2, y, text, {
+                .text(this.scene.scale.width / 2, y, text, this.textStyle('#cbd5e1', '18px'))
+                .setOrigin(0.5)
+                .setScrollFactor(0)
+                .setDepth(21),
+        );
+    }
+
+    private addMenuButton(text: string, y: number, callback: () => void, color: string, x = this.scene.scale.width / 2): void {
+        this.menuObjects.push(
+            this.scene.add
+                .text(x, y, text, {
                     backgroundColor: color,
                     color: '#f8fafc',
                     fontFamily: 'system-ui, sans-serif',
@@ -191,6 +227,28 @@ export class GameHud {
     private clearMenu(): void {
         this.menuObjects.forEach((gameObject) => gameObject.destroy());
         this.menuObjects = [];
+    }
+
+    private setLocale(locale: Locale): void {
+        i18n.setLocale(locale);
+    }
+
+    private updateLanguage(): void {
+        this.timerText.setText(this.getTimerLabel());
+        this.experienceLabel.setText(this.getExperienceLabel(this.currentLevel));
+        this.controlsText.setText(this.getControlsText());
+
+        if (this.menuState === 'gameOver') {
+            this.showGameOver();
+        } else if (this.menuState === 'pause') {
+            this.showPauseMenu();
+        } else if (this.menuState === 'restartConfirmation') {
+            this.showRestartConfirmation();
+        }
+    }
+
+    private destroy(): void {
+        this.removeLanguageListener();
     }
 
     private formatTime(elapsed: number): string {

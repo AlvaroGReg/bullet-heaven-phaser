@@ -3,6 +3,7 @@ import { createEnemy } from '../entities/createEnemy';
 import { createPlayer } from '../entities/createPlayer';
 import { MAP_HEIGHT, MAP_WIDTH } from '../game/constants';
 import { PlayerStats } from '../game/PlayerStats';
+import { i18n } from '../i18n';
 import { CombatSystem } from '../systems/CombatSystem';
 import { EnemySpawner } from '../systems/EnemySpawner';
 import { ExperienceSystem } from '../systems/ExperienceSystem';
@@ -168,7 +169,7 @@ export class GameScene extends Phaser.Scene {
             .setDepth(10);
 
         this.upgradeTitle = this.add
-            .text(this.scale.width / 2, 150, 'Elige una mejora', {
+            .text(this.scale.width / 2, 150, i18n.t('upgrade.choose'), {
                 color: '#f8fafc',
                 fontFamily: 'system-ui, sans-serif',
                 fontSize: '36px',
@@ -183,13 +184,18 @@ export class GameScene extends Phaser.Scene {
 
     private createUpgradeCard(upgrade: Upgrade, index: number): Phaser.GameObjects.Text {
         const card = this.add
-            .text(330 + index * 310, this.scale.height / 2, `${upgrade.name}\n${upgrade.rarity.name}\n${upgrade.description}`, {
-                align: 'center',
-                color: '#111827',
-                fontFamily: 'system-ui, sans-serif',
-                fontSize: '20px',
-                wordWrap: { width: 220 },
-            })
+            .text(
+                330 + index * 310,
+                this.scale.height / 2,
+                `${upgrade.name}\n${i18n.t(`rarity.${upgrade.rarity.id}`)}\n${upgrade.description}`,
+                {
+                    align: 'center',
+                    color: '#111827',
+                    fontFamily: 'system-ui, sans-serif',
+                    fontSize: '20px',
+                    wordWrap: { width: 220 },
+                },
+            )
             .setOrigin(0.5)
             .setFixedSize(250, 170)
             .setPadding(15)

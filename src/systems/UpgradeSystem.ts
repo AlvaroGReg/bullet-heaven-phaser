@@ -1,5 +1,6 @@
 import type { PlayerStats } from '../game/PlayerStats';
 import { UPGRADE_RARITIES } from '../game/constants';
+import { i18n } from '../i18n';
 import type { WeaponKind, WeaponSystem } from './WeaponSystem';
 
 export type UpgradeRarity = (typeof UPGRADE_RARITIES)[number];
@@ -75,61 +76,61 @@ export class UpgradeSystem {
     }
 
     private createExperienceUpgrade(level: number): Upgrade {
-        return this.createUpgrade('experience', 'Experiencia', level, (value) => `+${value * 10}% EXP de gemas`, (value) => {
+        return this.createUpgrade('experience', 'upgrade.experience', level, (value) => i18n.t('upgrade.experience.description', { value: value * 10 }), (value) => {
             this.stats.experienceMultiplier += value * 0.1;
         });
     }
 
     private createDamageUpgrade(level: number): Upgrade {
-        return this.createUpgrade('damage', 'Dano', level, (value) => `+${value} dano`, (value) => {
+        return this.createUpgrade('damage', 'upgrade.damage', level, (value) => i18n.t('upgrade.damage.description', { value }), (value) => {
             this.stats.damage += value;
         });
     }
 
     private createAttackSpeedUpgrade(level: number): Upgrade {
-        return this.createUpgrade('attackSpeed', 'Cadencia', level, (value) => `+${value * 5}% cadencia`, (value) => {
+        return this.createUpgrade('attackSpeed', 'upgrade.attackSpeed', level, (value) => i18n.t('upgrade.attackSpeed.description', { value: value * 5 }), (value) => {
             this.stats.attackInterval = Math.max(100, this.stats.attackInterval * (1 - value * 0.05));
         });
     }
 
     private createProjectileSpeedUpgrade(level: number): Upgrade {
-        return this.createUpgrade('projectileSpeed', 'Velocidad de proyectil', level, (value) => `+${value * 40} velocidad`, (value) => {
+        return this.createUpgrade('projectileSpeed', 'upgrade.projectileSpeed', level, (value) => i18n.t('upgrade.projectileSpeed.description', { value: value * 40 }), (value) => {
             this.stats.projectileSpeed += value * 40;
         });
     }
 
     private createProjectileLifetimeUpgrade(level: number): Upgrade {
-        return this.createUpgrade('projectileLifetime', 'Vida de proyectil', level, (value) => `+${value * 100} ms`, (value) => {
+        return this.createUpgrade('projectileLifetime', 'upgrade.projectileLifetime', level, (value) => i18n.t('upgrade.projectileLifetime.description', { value: value * 100 }), (value) => {
             this.stats.projectileLifetime += value * 100;
         });
     }
 
     private createPiercingUpgrade(level: number): Upgrade {
-        return this.createUpgrade('piercing', 'Perforacion', level, (value) => `+${Math.ceil(value / 2)} enemigos`, (value) => {
+        return this.createUpgrade('piercing', 'upgrade.piercing', level, (value) => i18n.t('upgrade.piercing.description', { value: Math.ceil(value / 2) }), (value) => {
             this.stats.projectilePiercing += Math.ceil(value / 2);
         });
     }
 
     private createMovementSpeedUpgrade(level: number): Upgrade {
-        return this.createUpgrade('movementSpeed', 'Velocidad de movimiento', level, (value) => `+${value * 12} velocidad`, (value) => {
+        return this.createUpgrade('movementSpeed', 'upgrade.movementSpeed', level, (value) => i18n.t('upgrade.movementSpeed.description', { value: value * 12 }), (value) => {
             this.stats.movementSpeed += value * 12;
         });
     }
 
     private createHealthUpgrade(level: number): Upgrade {
-        return this.createUpgrade('health', 'Vida maxima', level, (value) => `+${value} vida maxima`, (value) => {
+        return this.createUpgrade('health', 'upgrade.health', level, (value) => i18n.t('upgrade.health.description', { value }), (value) => {
             this.increaseMaxHealth(value);
         });
     }
 
     private createRegenerationUpgrade(level: number): Upgrade {
-        return this.createUpgrade('regeneration', 'Regeneracion', level, (value) => `+${(value * 0.1).toFixed(1)} vida/s`, (value) => {
+        return this.createUpgrade('regeneration', 'upgrade.regeneration', level, (value) => i18n.t('upgrade.regeneration.description', { value: (value * 0.1).toFixed(1) }), (value) => {
             this.stats.healthRegeneration += value * 0.1;
         });
     }
 
     private createPickupRangeUpgrade(level: number): Upgrade {
-        return this.createUpgrade('pickupRange', 'Rango de recogida', level, (value) => `+${value * 20} rango`, (value) => {
+        return this.createUpgrade('pickupRange', 'upgrade.pickupRange', level, (value) => i18n.t('upgrade.pickupRange.description', { value: value * 20 }), (value) => {
             this.stats.pickupRange += value * 20;
         });
     }
@@ -141,15 +142,15 @@ export class UpgradeSystem {
         return this.createFixedUpgrade(
             'weapon',
             this.getWeaponName(weapon),
-            'Rara',
-            'Equipa esta arma',
+            'rare',
+            i18n.t('upgrade.weapon.description'),
             () => this.weapons.equipWeapon(weapon),
         );
     }
 
     private createUpgrade(
         type: UpgradeType,
-        name: string,
+        nameKey: string,
         level: number,
         getDescription: (value: number) => string,
         apply: (value: number) => void,
@@ -157,7 +158,7 @@ export class UpgradeSystem {
         const rarity = this.chooseRarity(type, level);
 
         return {
-            name,
+            name: i18n.t(nameKey),
             rarity,
             type,
             description: getDescription(rarity.value),
@@ -171,11 +172,11 @@ export class UpgradeSystem {
     private createFixedUpgrade(
         type: UpgradeType,
         name: string,
-        rarityName: string,
+        rarityId: string,
         description: string,
         apply: () => boolean,
     ): Upgrade {
-        const rarity = UPGRADE_RARITIES.find((candidate) => candidate.name === rarityName)!;
+        const rarity = UPGRADE_RARITIES.find((candidate) => candidate.id === rarityId)!;
 
         return {
             name,
@@ -191,15 +192,7 @@ export class UpgradeSystem {
     }
 
     private getWeaponName(weapon: WeaponKind): string {
-        const names: Record<WeaponKind, string> = {
-            dagger: 'Daga',
-            bow: 'Arco',
-            crossbow: 'Ballesta',
-            staff: 'Vara de mago',
-            cannon: 'Canon',
-        };
-
-        return names[weapon];
+        return i18n.t(`weapon.${weapon}`);
     }
 
     private chooseRarity(type: UpgradeType, level: number): UpgradeRarity {
