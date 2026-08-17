@@ -1,4 +1,4 @@
-# Bullet Heaven with Phaser
+# Rogue Heaven with Phaser
 
 Browser-based 2D bullet-heaven project. The goal is not to design a final architecture or optimize prematurely, but to understand the systems behind this kind of game through small, playable increments.
 
