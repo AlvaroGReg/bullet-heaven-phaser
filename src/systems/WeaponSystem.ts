@@ -102,4 +102,8 @@ export class WeaponSystem {
         this.nextAttackAt[weapon] = time + interval;
         return true;
     }
+
+    public hasReadyWeapon(time: number): boolean {
+        return this.equippedWeapons.some((weapon) => time >= (this.nextAttackAt[weapon] ?? 0));
+    }
 }

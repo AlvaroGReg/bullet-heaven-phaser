@@ -53,10 +53,14 @@ export class ExperienceSystem {
             return;
         }
 
+        const pickupRangeSquared = this.stats.pickupRange ** 2;
+
         for (const gameObject of this.gems.getChildren()) {
             const gem = gameObject as ExperienceGem;
+            const distanceX = this.player.x - gem.x;
+            const distanceY = this.player.y - gem.y;
 
-            if (gem.active && Phaser.Math.Distance.Between(this.player.x, this.player.y, gem.x, gem.y) <= this.stats.pickupRange) {
+            if (gem.active && distanceX ** 2 + distanceY ** 2 <= pickupRangeSquared) {
                 this.collectGem(gem);
                 return;
             }

@@ -2,13 +2,11 @@ import Phaser from 'phaser';
 import type { Enemy } from '../entities/createEnemy';
 import {
     AUTO_ATTACK_INTERVAL,
+    ENEMY_DAMAGE_COOLDOWN,
     PROJECTILE_LIFETIME,
     PROJECTILE_SPEED,
 } from '../game/constants';
 import type { PlayerStats } from '../game/PlayerStats';
-import {
-    ENEMY_DAMAGE_COOLDOWN,
-} from '../game/constants';
 import { WEAPON_DEFINITIONS } from './WeaponSystem';
 import type { WeaponSystem } from './WeaponSystem';
 
@@ -150,13 +148,16 @@ export class CombatSystem {
             }
         }
 
-        if (this.autoAimEnabled && this.updateAutoAim()) {
-            this.attack(this.autoAimDirection);
+        if (this.autoAimEnabled && this.weapons.hasReadyWeapon(this.scene.time.now)) {
+            const target = this.updateAutoAim();
+
+            if (target) {
+                this.attack(this.autoAimDirection, target);
+            }
         }
     }
 
-    public attack(aimDirection: Phaser.Math.Vector2): void {
-        const target = this.getClosestEnemy();
+    public attack(aimDirection: Phaser.Math.Vector2, target = this.getClosestEnemy()): void {
 
         if (this.gameOver || !target) {
             return;
@@ -183,7 +184,7 @@ export class CombatSystem {
 
     private fireWeapon(weapon: keyof typeof WEAPON_DEFINITIONS, direction: Phaser.Math.Vector2): void {
         const definition = WEAPON_DEFINITIONS[weapon];
-        const attackInterval = definition.attackInterval * (this.stats.attackInterval / AUTO_ATTACK_INTERVAL);
+        const attackInterval = this.getAttackInterval(weapon);
 
         if (!this.weapons.canFire(weapon, this.scene.time.now, attackInterval)) {
             return;
@@ -214,15 +215,19 @@ export class CombatSystem {
         });
     }
 
-    private updateAutoAim(): boolean {
+    private updateAutoAim(): Enemy | undefined {
         const target = this.getClosestEnemy();
 
         if (!target) {
-            return false;
+            return undefined;
         }
 
         this.autoAimDirection.set(target.x - this.player.x, target.y - this.player.y).normalize();
-        return true;
+        return target;
+    }
+
+    private getAttackInterval(weapon: keyof typeof WEAPON_DEFINITIONS): number {
+        return WEAPON_DEFINITIONS[weapon].attackInterval * (this.stats.attackInterval / AUTO_ATTACK_INTERVAL);
     }
 
     private getClosestEnemy(): Enemy | undefined {

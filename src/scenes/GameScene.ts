@@ -55,6 +55,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     public create(): void {
+        this.time.paused = false;
         this.paused = false;
         this.gamepadStartWasDown = false;
         this.upgradeSelectionActive = false;
@@ -131,6 +132,11 @@ export class GameScene extends Phaser.Scene {
         this.hud.update(delta);
         this.controller.update();
         this.experience.update();
+
+        if (this.upgradeSelectionActive) {
+            return;
+        }
+
         this.enemySpawner.update();
         this.combat.update(delta);
     }
@@ -155,6 +161,7 @@ export class GameScene extends Phaser.Scene {
     private showUpgradeSelection(): void {
         this.upgradeSelectionActive = true;
         this.physics.pause();
+        this.time.paused = true;
         this.upgradeOverlay = this.add
             .rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x080b10, 0.86)
             .setScrollFactor(0)
@@ -214,6 +221,7 @@ export class GameScene extends Phaser.Scene {
 
         if (!this.paused) {
             this.physics.resume();
+            this.time.paused = false;
         }
     }
 
@@ -237,8 +245,10 @@ export class GameScene extends Phaser.Scene {
 
         if (this.paused) {
             this.physics.pause();
+            this.time.paused = true;
         } else {
             this.physics.resume();
+            this.time.paused = false;
         }
     }
 
@@ -254,6 +264,7 @@ export class GameScene extends Phaser.Scene {
 
     private endGame = (): void => {
         this.physics.pause();
+        this.time.paused = true;
         this.player.setFillStyle(0x5c6670);
         this.hud.showGameOver();
     };
