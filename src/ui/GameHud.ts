@@ -7,6 +7,7 @@ const BAR_WIDTH = 260;
 const BAR_HEIGHT = 24;
 
 type GameHudCallbacks = {
+    onMainMenu: () => void;
     onResume: () => void;
     onRestart: () => void;
 };
@@ -20,6 +21,8 @@ export class GameHud {
 
     private readonly timerText: Phaser.GameObjects.Text;
 
+    private readonly goldText: Phaser.GameObjects.Text;
+
     private readonly controlsText: Phaser.GameObjects.Text;
 
     private elapsed = 0;
@@ -29,6 +32,8 @@ export class GameHud {
     private menuState: 'gameOver' | 'pause' | 'restartConfirmation' | undefined;
 
     private currentLevel: number;
+
+    private currentGold: number;
 
     private removeLanguageListener: () => void;
 
@@ -40,8 +45,10 @@ export class GameHud {
         experience: number,
         requiredExperience: number,
         private readonly callbacks: GameHudCallbacks,
+        gold: number,
     ) {
         this.currentLevel = level;
+        this.currentGold = gold;
         this.scene.add
             .rectangle(24, 20, BAR_WIDTH, BAR_HEIGHT, 0x193127)
             .setOrigin(0)
@@ -73,6 +80,11 @@ export class GameHud {
 
         this.timerText = this.scene.add
             .text(this.scene.scale.width - 24, 20, this.getTimerLabel(), this.textStyle('#f2f5f7', '18px'))
+            .setOrigin(1, 0)
+            .setScrollFactor(0);
+
+        this.goldText = this.scene.add
+            .text(this.scene.scale.width - 24, 48, this.getGoldLabel(gold), this.textStyle('#fcd34d', '18px'))
             .setOrigin(1, 0)
             .setScrollFactor(0);
 
@@ -111,6 +123,11 @@ export class GameHud {
         this.experienceLabel.setText(this.getExperienceLabel(level));
     }
 
+    public setGold(gold: number): void {
+        this.currentGold = gold;
+        this.goldText.setText(this.getGoldLabel(gold));
+    }
+
     public setPaused(paused: boolean): void {
         this.controlsText.setVisible(paused || this.elapsed < CONTROLS_DURATION);
         this.controlsText.setDepth(paused ? 21 : 0);
@@ -130,6 +147,7 @@ export class GameHud {
         this.addMenuBackground();
         this.addMenuTitle(i18n.t('gameover.title'), 280);
         this.addMenuButton(i18n.t('pause.restart'), 380, this.callbacks.onRestart, '#7f1d1d');
+        this.addMenuButton(i18n.t('menu.main'), 450, this.callbacks.onMainMenu, '#475569');
     }
 
     private getExperienceLabel(level: number): string {
@@ -138,6 +156,10 @@ export class GameHud {
 
     private getTimerLabel(): string {
         return i18n.t('hud.time', { time: this.formatTime(this.elapsed) });
+    }
+
+    private getGoldLabel(gold: number): string {
+        return i18n.t('hud.gold', { gold });
     }
 
     private getControlsText(): string {
@@ -151,9 +173,11 @@ export class GameHud {
         this.addMenuTitle(i18n.t('pause.title'), 250);
         this.addMenuButton(i18n.t('pause.continue'), 330, this.callbacks.onResume, '#1d4ed8');
         this.addMenuButton(i18n.t('pause.restart'), 400, this.showRestartConfirmation, '#7f1d1d');
-        this.addMenuLabel(i18n.t('language.title'), 475);
-        this.addMenuButton(i18n.t('language.spanish'), 520, () => this.setLocale('es'), '#475569', 530);
-        this.addMenuButton(i18n.t('language.english'), 520, () => this.setLocale('en'), '#475569', 750);
+        this.addMenuButton(i18n.t('menu.main'), 470, this.callbacks.onMainMenu, '#475569');
+        this.addMenuLabel(i18n.t('language.title'), 535);
+        this.addMenuButton(i18n.t('language.english'), 580, () => this.setLocale('en'), '#475569', 430);
+        this.addMenuButton(i18n.t('language.spanish'), 580, () => this.setLocale('es'), '#475569', 640);
+        this.addMenuButton(i18n.t('language.japanese'), 580, () => this.setLocale('ja'), '#475569', 850);
     }
 
     private showRestartConfirmation = (): void => {
@@ -236,6 +260,7 @@ export class GameHud {
     private updateLanguage(): void {
         this.timerText.setText(this.getTimerLabel());
         this.experienceLabel.setText(this.getExperienceLabel(this.currentLevel));
+        this.goldText.setText(this.getGoldLabel(this.currentGold));
         this.controlsText.setText(this.getControlsText());
 
         if (this.menuState === 'gameOver') {

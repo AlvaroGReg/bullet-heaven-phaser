@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GameScene } from '../scenes/GameScene';
+import { MenuScene } from '../scenes/MenuScene';
 
 export const gameConfig: Phaser.Types.Core.GameConfig = {
     type: Phaser.AUTO,
@@ -8,7 +9,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     height: 720,
     backgroundColor: '#10151f',
     disableContextMenu: true,
-    scene: [GameScene],
+    scene: [MenuScene, GameScene],
     input: {
         gamepad: true,
     },

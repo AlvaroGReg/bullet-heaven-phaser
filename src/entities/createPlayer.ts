@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
+import type { PlayerCharacter } from '../game/playerCharacters';
 
-export function createPlayer(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Arc {
-    const player = scene.add.circle(x, y, 18, 0x6ee7b7);
+export function createPlayer(scene: Phaser.Scene, x: number, y: number, character: PlayerCharacter): Phaser.GameObjects.Arc {
+    const player = scene.add.circle(x, y, 18, character.color);
     player.setStrokeStyle(3, 0xd9fff0);
     scene.physics.add.existing(player);
 

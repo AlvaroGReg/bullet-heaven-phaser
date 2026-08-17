@@ -6,6 +6,7 @@ export type Enemy = Phaser.GameObjects.Arc & {
     armored: boolean;
     damage: number;
     experienceMultiplier: number;
+    goldDropChance: number;
     grantsFullLevel: boolean;
     health: number;
     kind: EnemyKind;
@@ -26,6 +27,7 @@ export function createEnemy(scene: Phaser.Scene, x: number, y: number, kind: Ene
     enemy.armored = armored && canBeArmored;
     enemy.damage = definition.damage;
     enemy.experienceMultiplier = definition.experienceMultiplier * (enemy.armored ? 1.2 : 1);
+    enemy.goldDropChance = definition.goldDropChance;
     enemy.grantsFullLevel = definition.grantsFullLevel ?? false;
     enemy.health = definition.health;
     enemy.kind = kind;

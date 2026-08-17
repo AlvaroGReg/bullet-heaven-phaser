@@ -2,9 +2,13 @@ import Phaser from 'phaser';
 import { createEnemy } from '../entities/createEnemy';
 import { createPlayer } from '../entities/createPlayer';
 import { MAP_HEIGHT, MAP_WIDTH } from '../game/constants';
+import { metaProgress } from '../game/MetaProgress';
+import { PLAYER_CHARACTERS } from '../game/playerCharacters';
+import type { PlayerCharacter } from '../game/playerCharacters';
 import { PlayerStats } from '../game/PlayerStats';
 import { i18n } from '../i18n';
 import { CombatSystem } from '../systems/CombatSystem';
+import { CurrencySystem } from '../systems/CurrencySystem';
 import { EnemySpawner } from '../systems/EnemySpawner';
 import { ExperienceSystem } from '../systems/ExperienceSystem';
 import { PlayerController } from '../systems/PlayerController';
@@ -22,6 +26,8 @@ export class GameScene extends Phaser.Scene {
     private combat!: CombatSystem;
 
     private controller!: PlayerController;
+
+    private currency!: CurrencySystem;
 
     private enemySpawner!: EnemySpawner;
 
@@ -51,8 +57,14 @@ export class GameScene extends Phaser.Scene {
 
     private upgradeCards: Phaser.GameObjects.Text[] = [];
 
+    private character: PlayerCharacter = PLAYER_CHARACTERS[0];
+
     public constructor() {
         super('game');
+    }
+
+    public init(data: { character?: PlayerCharacter }): void {
+        this.character = data.character ?? PLAYER_CHARACTERS[0];
     }
 
     public create(): void {
@@ -63,7 +75,7 @@ export class GameScene extends Phaser.Scene {
         this.pendingUpgradeSelections = 0;
         createArena(this);
 
-        this.player = createPlayer(this, MAP_WIDTH / 2, MAP_HEIGHT / 2);
+        this.player = createPlayer(this, MAP_WIDTH / 2, MAP_HEIGHT / 2, this.character);
         const enemy = createEnemy(this, MAP_WIDTH / 2 - 360, MAP_HEIGHT / 2);
         this.enemies = this.physics.add.group();
         this.enemies.add(enemy);
@@ -73,6 +85,10 @@ export class GameScene extends Phaser.Scene {
         this.experience = new ExperienceSystem(this, this.player, this.stats, {
             onExperienceChanged: this.updateExperience,
             onLevelUp: this.queueUpgradeSelection,
+        });
+        this.currency = new CurrencySystem(this, this.player, (amount) => {
+            metaProgress.addGold(amount);
+            this.hud.setGold(metaProgress.currentGold);
         });
         this.combat = new CombatSystem(this, this.player, this.enemies, this.stats, this.weapons, {
             onPlayerHealthChanged: this.updateHealth,
@@ -84,6 +100,7 @@ export class GameScene extends Phaser.Scene {
                     defeatedEnemy.experienceMultiplier,
                     defeatedEnemy.grantsFullLevel,
                 );
+                this.currency.trySpawn(defeatedEnemy.x, defeatedEnemy.y, defeatedEnemy.goldDropChance);
             },
         });
         this.upgrades = new UpgradeSystem(
@@ -119,7 +136,9 @@ export class GameScene extends Phaser.Scene {
             {
                 onResume: this.resumeGame,
                 onRestart: this.restartGame,
+                onMainMenu: this.returnToMenu,
             },
+            metaProgress.currentGold,
         );
     }
 
@@ -265,7 +284,11 @@ export class GameScene extends Phaser.Scene {
     };
 
     private restartGame = (): void => {
-        this.scene.restart();
+        this.scene.restart({ character: this.character });
+    };
+
+    private returnToMenu = (): void => {
+        this.scene.start('menu');
     };
 
     private endGame = (): void => {

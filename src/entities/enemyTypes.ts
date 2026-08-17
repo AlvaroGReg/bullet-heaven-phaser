@@ -3,6 +3,7 @@ export type EnemyKind = 'normal' | 'fast' | 'heavy' | 'elite' | 'boss' | 'ranged
 export type EnemyDefinition = {
     color: number;
     damage: number;
+    goldDropChance: number;
     experienceMultiplier: number;
     health: number;
     grantsFullLevel?: boolean;
@@ -19,6 +20,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyKind, EnemyDefinition> = {
     normal: {
         color: 0xf07178,
         damage: 1,
+        goldDropChance: 0.08,
         experienceMultiplier: 1,
         health: 6,
         radius: 20,
@@ -27,6 +29,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyKind, EnemyDefinition> = {
     fast: {
         color: 0xfbbf24,
         damage: 0.5,
+        goldDropChance: 0.06,
         experienceMultiplier: 1.2,
         health: 3,
         radius: 16,
@@ -35,6 +38,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyKind, EnemyDefinition> = {
     heavy: {
         color: 0xa78bfa,
         damage: 2,
+        goldDropChance: 0.18,
         experienceMultiplier: 2,
         health: 18,
         radius: 30,
@@ -43,6 +47,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyKind, EnemyDefinition> = {
     elite: {
         color: 0x38bdf8,
         damage: 2.5,
+        goldDropChance: 0.28,
         experienceMultiplier: 3,
         health: 15,
         radius: 20,
@@ -51,6 +56,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyKind, EnemyDefinition> = {
     boss: {
         color: 0xef4444,
         damage: 4,
+        goldDropChance: 1,
         experienceMultiplier: 1,
         grantsFullLevel: true,
         health: 60,
@@ -60,6 +66,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyKind, EnemyDefinition> = {
     ranged: {
         color: 0xf97316,
         damage: 0.75,
+        goldDropChance: 0.1,
         experienceMultiplier: 1.2,
         health: 6,
         radius: 20,
