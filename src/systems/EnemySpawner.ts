@@ -13,6 +13,8 @@ import {
 } from '../game/constants';
 
 export class EnemySpawner {
+    private elapsedMilliseconds = 0;
+
     private nextSpawnAt: number;
 
     private nextEliteAt: number;
@@ -26,14 +28,15 @@ export class EnemySpawner {
         private readonly player: Player,
         private readonly enemies: Phaser.Physics.Arcade.Group,
     ) {
-        this.nextSpawnAt = this.scene.time.now + ACTIVE_DIFFICULTY.spawnInterval.initial;
-        this.nextEliteAt = this.scene.time.now + ACTIVE_DIFFICULTY.elite.startsAt;
+        this.nextSpawnAt = ACTIVE_DIFFICULTY.spawnInterval.initial;
+        this.nextEliteAt = ACTIVE_DIFFICULTY.elite.startsAt;
     }
 
-    public update(): void {
+    public update(elapsedMilliseconds: number): void {
+        this.elapsedMilliseconds = elapsedMilliseconds;
         this.spawnScheduledEnemies();
 
-        if (this.scene.time.now < this.nextSpawnAt) {
+        if (this.elapsedMilliseconds < this.nextSpawnAt) {
             return;
         }
 
@@ -45,29 +48,29 @@ export class EnemySpawner {
         const interval = this.finalBossSpawned
             ? Math.max(
                 POST_FINAL_BOSS_SPAWN_MIN_INTERVAL,
-                ACTIVE_DIFFICULTY.spawnInterval.minimum - Math.floor((this.scene.time.now - ACTIVE_DIFFICULTY.bosses.finalSpawnAt) / POST_FINAL_BOSS_PHASE_DURATION)
+                ACTIVE_DIFFICULTY.spawnInterval.minimum - Math.floor((this.elapsedMilliseconds - ACTIVE_DIFFICULTY.bosses.finalSpawnAt) / POST_FINAL_BOSS_PHASE_DURATION)
                     * POST_FINAL_BOSS_SPAWN_INTERVAL_REDUCTION,
             )
             : Math.max(
                 ACTIVE_DIFFICULTY.spawnInterval.minimum,
-                ACTIVE_DIFFICULTY.spawnInterval.initial - Math.floor(this.scene.time.now / 60_000)
+                ACTIVE_DIFFICULTY.spawnInterval.initial - Math.floor(this.elapsedMilliseconds / 60_000)
                     * ACTIVE_DIFFICULTY.spawnInterval.reductionPerMinute,
             );
-        this.nextSpawnAt = this.scene.time.now + interval;
+        this.nextSpawnAt = this.elapsedMilliseconds + interval;
     }
 
     private spawnScheduledEnemies(): void {
-        while (this.scene.time.now >= this.nextEliteAt) {
+        while (this.elapsedMilliseconds >= this.nextEliteAt) {
             this.spawnEnemy('elite');
             this.nextEliteAt += ACTIVE_DIFFICULTY.elite.spawnInterval;
         }
 
-        if (!this.firstBossSpawned && this.scene.time.now >= ACTIVE_DIFFICULTY.bosses.firstSpawnAt) {
+        if (!this.firstBossSpawned && this.elapsedMilliseconds >= ACTIVE_DIFFICULTY.bosses.firstSpawnAt) {
             this.firstBossSpawned = true;
             this.spawnEnemy('boss');
         }
 
-        if (!this.finalBossSpawned && this.scene.time.now >= ACTIVE_DIFFICULTY.bosses.finalSpawnAt) {
+        if (!this.finalBossSpawned && this.elapsedMilliseconds >= ACTIVE_DIFFICULTY.bosses.finalSpawnAt) {
             this.finalBossSpawned = true;
             this.spawnEnemy('boss', false, { healthMultiplier: ACTIVE_DIFFICULTY.bosses.finalHealthMultiplier, isFinalBoss: true });
         }
@@ -78,7 +81,7 @@ export class EnemySpawner {
         armored?: boolean,
         options: { healthMultiplier?: number; isFinalBoss?: boolean } = {},
     ): void {
-        const completedMinutes = Math.floor(this.scene.time.now / 60_000);
+        const completedMinutes = Math.floor(this.elapsedMilliseconds / 60_000);
         const choice = kind ? { armored: armored ?? false, kind } : this.chooseEnemy(completedMinutes);
         const scaling = {
             healthMultiplier: (options.healthMultiplier ?? 1) * (1 + completedMinutes * ACTIVE_DIFFICULTY.enemyGrowth.healthPerMinute),
@@ -105,7 +108,7 @@ export class EnemySpawner {
         let phase = ACTIVE_DIFFICULTY.spawnPhases[0];
 
         for (const candidate of ACTIVE_DIFFICULTY.spawnPhases) {
-            if (this.scene.time.now < candidate.startsAt) {
+            if (this.elapsedMilliseconds < candidate.startsAt) {
                 break;
             }
 

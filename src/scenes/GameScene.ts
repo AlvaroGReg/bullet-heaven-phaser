@@ -63,6 +63,8 @@ export class GameScene extends Phaser.Scene {
 
     private completed = false;
 
+    private elapsedGameTime = 0;
+
     public constructor() {
         super('game');
     }
@@ -74,6 +76,7 @@ export class GameScene extends Phaser.Scene {
         this.upgradeSelectionActive = false;
         this.pendingUpgradeSelections = 0;
         this.completed = false;
+        this.elapsedGameTime = 0;
         createArena(this);
         createRogueTextures(this);
 
@@ -165,6 +168,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
+        this.elapsedGameTime += delta;
         this.hud.update(delta);
         this.achievements.update(delta);
         this.controller.update();
@@ -174,7 +178,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        this.enemySpawner.update();
+        this.enemySpawner.update(this.elapsedGameTime);
         this.combat.update(delta);
     }
 
@@ -318,7 +322,7 @@ export class GameScene extends Phaser.Scene {
 
     private completeGame(): void {
         this.completed = true;
-        this.achievements.recordVictory(this.time.now / 1000, this.combat.health);
+        this.achievements.recordVictory(this.elapsedGameTime / 1000, this.combat.health);
         this.physics.pause();
         this.time.paused = true;
         this.player.setTint(0x60a5fa);

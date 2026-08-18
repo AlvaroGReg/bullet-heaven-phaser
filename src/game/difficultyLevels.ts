@@ -122,6 +122,18 @@ export const DIFFICULTY_LEVELS: Record<'level-1', DifficultyLevel> = {
                     { kind: 'elite', weight: 10 },
                 ],
             },
+            {
+                armored: true,
+                enemiesPerSpawn: 3,
+                startsAt: 6 * MINUTE,
+                weights: [
+                    { kind: 'normal', weight: 35 },
+                    { kind: 'fast', weight: 25 },
+                    { kind: 'heavy', weight: 10 },
+                    { kind: 'ranged', weight: 20 },
+                    { kind: 'elite', weight: 10 },
+                ],
+            },
         ],
     },
 };
