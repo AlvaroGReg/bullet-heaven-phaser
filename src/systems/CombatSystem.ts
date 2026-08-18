@@ -177,6 +177,10 @@ export class CombatSystem {
         this.autoAimEnabled = !this.autoAimEnabled;
     }
 
+    public enableAutoAim(): void {
+        this.autoAimEnabled = true;
+    }
+
     public increaseMaxHealth(amount: number): void {
         this.stats.maxHealth += amount;
         this.playerHealth += amount;

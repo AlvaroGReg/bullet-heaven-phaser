@@ -22,6 +22,7 @@ export const EXPERIENCE_PER_GEM = 1;
 export const EXPERIENCE_TO_LEVEL = 5;
 export const EXPERIENCE_LEVEL_GROWTH = 1.25;
 export const CONTROLLER_DEAD_ZONE = 0.2;
+export const TOUCH_DRAG_DEAD_ZONE = 12;
 export const UPGRADE_RARITIES = [
     { id: 'common', color: '#f8fafc', value: 1, initialWeight: 92, levelWeightIncrease: -2, typeWeightIncrease: -4 },
     { id: 'uncommon', color: '#4ade80', value: 2, initialWeight: 7, levelWeightIncrease: 1, typeWeightIncrease: 2 },

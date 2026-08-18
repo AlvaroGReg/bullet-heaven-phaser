@@ -11,6 +11,7 @@ type GameHudCallbacks = {
     onMainMenu: () => void;
     onResume: () => void;
     onRestart: () => void;
+    onTogglePause: () => void;
 };
 
 export class GameHud {
@@ -25,6 +26,8 @@ export class GameHud {
     private readonly goldText: Phaser.GameObjects.Text;
 
     private readonly controlsText: Phaser.GameObjects.Text;
+
+    private readonly hasTouchInput: boolean;
 
     private elapsed = 0;
 
@@ -47,7 +50,9 @@ export class GameHud {
         requiredExperience: number,
         private readonly callbacks: GameHudCallbacks,
         gold: number,
+        hasTouchInput: boolean,
     ) {
+        this.hasTouchInput = hasTouchInput;
         this.currentLevel = level;
         this.currentGold = gold;
         this.scene.add
@@ -79,15 +84,20 @@ export class GameHud {
         this.setHealth(health, maxHealth);
         this.setExperience(level, experience, requiredExperience);
 
+        const rightHudOffset = this.hasTouchInput ? 88 : 24;
         this.timerText = this.scene.add
-            .text(this.scene.scale.width - 24, 20, this.getTimerLabel(), this.textStyle(GRIM.text, '18px'))
+            .text(this.scene.scale.width - rightHudOffset, 20, this.getTimerLabel(), this.textStyle(GRIM.text, '18px'))
             .setOrigin(1, 0)
             .setScrollFactor(0);
 
         this.goldText = this.scene.add
-            .text(this.scene.scale.width - 24, 48, this.getGoldLabel(gold), this.textStyle('#fcd34d', '18px'))
+            .text(this.scene.scale.width - rightHudOffset, 48, this.getGoldLabel(gold), this.textStyle('#fcd34d', '18px'))
             .setOrigin(1, 0)
             .setScrollFactor(0);
+
+        if (this.hasTouchInput) {
+            this.addPauseButton();
+        }
 
         this.controlsText = this.scene.add
             .text(
@@ -173,7 +183,29 @@ export class GameHud {
     }
 
     private getControlsText(): string {
+        if (this.hasTouchInput) {
+            return i18n.t('controls.touch');
+        }
+
         return [i18n.t('controls.move'), i18n.t('controls.aim'), i18n.t('controls.auto')].join('\n');
+    }
+
+    private addPauseButton(): void {
+        const size = 56;
+        const background = this.scene.add.graphics();
+        background.fillStyle(0x1a211d, 0.94);
+        background.fillRoundedRect(-size / 2, -size / 2, size, size, 8);
+        background.lineStyle(3, 0xa8ad98, 1);
+        background.strokeRoundedRect(-size / 2, -size / 2, size, size, 8);
+
+        const icon = this.scene.add.text(0, -2, 'II', this.textStyle(GRIM.text, '24px')).setOrigin(0.5);
+        const button = this.scene.add.container(this.scene.scale.width - 44, 44, [background, icon]);
+        button
+            .setSize(size, size)
+            .setScrollFactor(0)
+            .setDepth(2)
+            .setInteractive(new Phaser.Geom.Rectangle(-size / 2, -size / 2, size, size), Phaser.Geom.Rectangle.Contains)
+            .on(Phaser.Input.Events.POINTER_DOWN, this.callbacks.onTogglePause);
     }
 
     private showPauseMenu(): void {

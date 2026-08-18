@@ -47,6 +47,8 @@ export class GameScene extends Phaser.Scene {
 
     private pauseKey!: Phaser.Input.Keyboard.Key;
 
+    private readonly hasTouchInput = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
     private paused = false;
 
     private gamepadStartWasDown = false;
@@ -122,6 +124,9 @@ export class GameScene extends Phaser.Scene {
                 }
             },
         });
+        if (this.hasTouchInput) {
+            this.combat.enableAutoAim();
+        }
         this.upgrades = new UpgradeSystem(
             this.stats,
             (amount) => this.combat.increaseMaxHealth(amount),
@@ -138,7 +143,7 @@ export class GameScene extends Phaser.Scene {
                     this.combat.toggleAutoAim();
                 }
             },
-        });
+        }, this.hasTouchInput);
         this.enemySpawner = new EnemySpawner(this, this.player, this.enemies);
         this.pauseKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
 
@@ -156,8 +161,10 @@ export class GameScene extends Phaser.Scene {
                 onResume: this.resumeGame,
                 onRestart: this.restartGame,
                 onMainMenu: this.returnToMenu,
+                onTogglePause: this.togglePause,
             },
             metaProgress.currentGold,
+            this.hasTouchInput,
         );
     }
 
@@ -282,7 +289,7 @@ export class GameScene extends Phaser.Scene {
         this.gamepadStartWasDown = startIsDown;
     }
 
-    private togglePause(): void {
+    private togglePause = (): void => {
         if (this.combat.isGameOver || this.completed || this.upgradeSelectionActive) {
             return;
         }
@@ -297,7 +304,7 @@ export class GameScene extends Phaser.Scene {
             this.physics.resume();
             this.time.paused = false;
         }
-    }
+    };
 
     private resumeGame = (): void => {
         if (this.paused) {

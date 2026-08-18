@@ -12,6 +12,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     disableContextMenu: true,
     scene: [MenuScene, GameScene],
     input: {
+        activePointers: 2,
         gamepad: true,
     },
     physics: {
@@ -24,5 +25,6 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
+        expandParent: true,
     },
 };
