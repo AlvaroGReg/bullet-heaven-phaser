@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [master]
+    branches: [mobile-and-responsive]
   workflow_dispatch:
 
 permissions:
@@ -18,8 +18,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout main site
         uses: actions/checkout@v4
+        with:
+          ref: master
+          path: main
+
+      - name: Checkout mobile site
+        uses: actions/checkout@v4
+        with:
+          ref: mobile-and-responsive
+          path: mobile-and-responsive
 
       - name: Set up Pages
         uses: actions/configure-pages@v5
@@ -28,18 +37,28 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Install dependencies
+      - name: Build main site
+        working-directory: main
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build mobile site
+        working-directory: mobile-and-responsive
         run: npm ci
 
-      - name: Build
-        run: npm run build
+      - name: Assemble Pages site
+        run: |
+          npm run build --prefix mobile-and-responsive
+          mkdir -p site/mobile-and-responsive
+          cp -R main/dist/. site/
+          cp -R mobile-and-responsive/dist/. site/mobile-and-responsive/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site
 
   deploy:
     needs: build
