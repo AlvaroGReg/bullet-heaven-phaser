@@ -1,4 +1,4 @@
-export type MetaUpgradeCategory = 'baseStats' | 'characters' | 'weapons' | 'ingameUpgrades';
+export type MetaUpgradeCategory = 'baseStats' | 'weapons' | 'ingameUpgrades';
 
 export type MetaUpgrade = {
     category: MetaUpgradeCategory;
@@ -13,7 +13,6 @@ const STORAGE_KEY = 'bullet-heaven.meta-progress';
 
 export const META_UPGRADES: readonly MetaUpgrade[] = [
     { category: 'baseStats', id: 'vitality', nameKey: 'meta.vitality.name', descriptionKey: 'meta.vitality.description', achievementKey: 'achievement.survivor', goldCost: 50 },
-    { category: 'characters', id: 'character-ranger', nameKey: 'character.ranger', descriptionKey: 'meta.character.description', achievementKey: 'achievement.explorer', goldCost: 100 },
     { category: 'weapons', id: 'weapon-bow', nameKey: 'weapon.bow', descriptionKey: 'meta.weapon.description', achievementKey: 'achievement.hunter', goldCost: 75 },
     { category: 'weapons', id: 'weapon-crossbow', nameKey: 'weapon.crossbow', descriptionKey: 'meta.weapon.description', achievementKey: 'achievement.hunter', goldCost: 100 },
     { category: 'weapons', id: 'weapon-staff', nameKey: 'weapon.staff', descriptionKey: 'meta.weapon.description', achievementKey: 'achievement.hunter', goldCost: 125 },

@@ -2,17 +2,9 @@ import Phaser from 'phaser';
 import { createEnemy } from '../entities/createEnemy';
 import type { Player } from '../entities/createPlayer';
 import type { EnemyKind } from '../entities/enemyTypes';
+import { ACTIVE_DIFFICULTY } from '../game/difficultyLevels';
+import type { DifficultyLevel } from '../game/difficultyLevels';
 import {
-    ELITE_SPAWN_INTERVAL,
-    ELITE_SPAWN_START_TIME,
-    ENEMY_HEALTH_GROWTH_PER_PHASE,
-    ENEMY_SPAWN_INITIAL_INTERVAL,
-    ENEMY_SPAWN_INTERVAL_REDUCTION,
-    ENEMY_SPAWN_MIN_INTERVAL,
-    ENEMY_SPAWN_PHASE_DURATION,
-    ENEMY_SPEED_GROWTH_PER_PHASE,
-    FINAL_BOSS_TIME,
-    FIRST_BOSS_TIME,
     MAP_HEIGHT,
     MAP_WIDTH,
     POST_FINAL_BOSS_PHASE_DURATION,
@@ -34,8 +26,8 @@ export class EnemySpawner {
         private readonly player: Player,
         private readonly enemies: Phaser.Physics.Arcade.Group,
     ) {
-        this.nextSpawnAt = this.scene.time.now + ENEMY_SPAWN_INITIAL_INTERVAL;
-        this.nextEliteAt = this.scene.time.now + ELITE_SPAWN_START_TIME;
+        this.nextSpawnAt = this.scene.time.now + ACTIVE_DIFFICULTY.spawnInterval.initial;
+        this.nextEliteAt = this.scene.time.now + ACTIVE_DIFFICULTY.elite.startsAt;
     }
 
     public update(): void {
@@ -45,22 +37,21 @@ export class EnemySpawner {
             return;
         }
 
-        const completedPhases = Math.floor(this.scene.time.now / ENEMY_SPAWN_PHASE_DURATION);
-        const enemiesPerSpawn = Math.min(1 + Math.floor(completedPhases / 2), 4);
-        for (let index = 0; index < enemiesPerSpawn; index += 1) {
+        const phase = this.getSpawnPhase();
+        for (let index = 0; index < phase.enemiesPerSpawn; index += 1) {
             this.spawnEnemy();
         }
 
         const interval = this.finalBossSpawned
             ? Math.max(
                 POST_FINAL_BOSS_SPAWN_MIN_INTERVAL,
-                ENEMY_SPAWN_MIN_INTERVAL - Math.floor((this.scene.time.now - FINAL_BOSS_TIME) / POST_FINAL_BOSS_PHASE_DURATION)
+                ACTIVE_DIFFICULTY.spawnInterval.minimum - Math.floor((this.scene.time.now - ACTIVE_DIFFICULTY.bosses.finalSpawnAt) / POST_FINAL_BOSS_PHASE_DURATION)
                     * POST_FINAL_BOSS_SPAWN_INTERVAL_REDUCTION,
             )
             : Math.max(
-                ENEMY_SPAWN_MIN_INTERVAL,
-                ENEMY_SPAWN_INITIAL_INTERVAL - Math.floor(this.scene.time.now / ENEMY_SPAWN_PHASE_DURATION)
-                    * ENEMY_SPAWN_INTERVAL_REDUCTION,
+                ACTIVE_DIFFICULTY.spawnInterval.minimum,
+                ACTIVE_DIFFICULTY.spawnInterval.initial - Math.floor(this.scene.time.now / 60_000)
+                    * ACTIVE_DIFFICULTY.spawnInterval.reductionPerMinute,
             );
         this.nextSpawnAt = this.scene.time.now + interval;
     }
@@ -68,17 +59,17 @@ export class EnemySpawner {
     private spawnScheduledEnemies(): void {
         while (this.scene.time.now >= this.nextEliteAt) {
             this.spawnEnemy('elite');
-            this.nextEliteAt += ELITE_SPAWN_INTERVAL;
+            this.nextEliteAt += ACTIVE_DIFFICULTY.elite.spawnInterval;
         }
 
-        if (!this.firstBossSpawned && this.scene.time.now >= FIRST_BOSS_TIME) {
+        if (!this.firstBossSpawned && this.scene.time.now >= ACTIVE_DIFFICULTY.bosses.firstSpawnAt) {
             this.firstBossSpawned = true;
             this.spawnEnemy('boss');
         }
 
-        if (!this.finalBossSpawned && this.scene.time.now >= FINAL_BOSS_TIME) {
+        if (!this.finalBossSpawned && this.scene.time.now >= ACTIVE_DIFFICULTY.bosses.finalSpawnAt) {
             this.finalBossSpawned = true;
-            this.spawnEnemy('boss', false, { healthMultiplier: 2.5, isFinalBoss: true });
+            this.spawnEnemy('boss', false, { healthMultiplier: ACTIVE_DIFFICULTY.bosses.finalHealthMultiplier, isFinalBoss: true });
         }
     }
 
@@ -87,12 +78,12 @@ export class EnemySpawner {
         armored?: boolean,
         options: { healthMultiplier?: number; isFinalBoss?: boolean } = {},
     ): void {
-        const completedPhases = Math.floor(this.scene.time.now / ENEMY_SPAWN_PHASE_DURATION);
-        const choice = kind ? { armored: armored ?? false, kind } : this.chooseEnemy(completedPhases);
+        const completedMinutes = Math.floor(this.scene.time.now / 60_000);
+        const choice = kind ? { armored: armored ?? false, kind } : this.chooseEnemy(completedMinutes);
         const scaling = {
-            healthMultiplier: (options.healthMultiplier ?? 1) * (1 + completedPhases * ENEMY_HEALTH_GROWTH_PER_PHASE),
+            healthMultiplier: (options.healthMultiplier ?? 1) * (1 + completedMinutes * ACTIVE_DIFFICULTY.enemyGrowth.healthPerMinute),
             isFinalBoss: options.isFinalBoss,
-            speedMultiplier: 1 + completedPhases * ENEMY_SPEED_GROWTH_PER_PHASE,
+            speedMultiplier: 1 + completedMinutes * ACTIVE_DIFFICULTY.enemyGrowth.speedPerMinute,
         };
 
         for (let attempt = 0; attempt < 10; attempt += 1) {
@@ -110,32 +101,23 @@ export class EnemySpawner {
         this.enemies.add(createEnemy(this.scene, x, y, choice.kind, choice.armored, scaling));
     }
 
-    private chooseEnemy(completedPhases: number): { armored: boolean; kind: EnemyKind } {
-        const options: Array<{ kind: EnemyKind; weight: number }> = completedPhases === 0
-            ? [
-                { kind: 'normal', weight: 85 },
-                { kind: 'fast', weight: 15 },
-            ]
-            : completedPhases === 1
-                ? [
-                    { kind: 'normal', weight: 70 },
-                    { kind: 'fast', weight: 20 },
-                    { kind: 'heavy', weight: 10 },
-                ]
-                : completedPhases === 2
-                    ? [
-                        { kind: 'normal', weight: 55 },
-                        { kind: 'fast', weight: 25 },
-                        { kind: 'heavy', weight: 13 },
-                        { kind: 'ranged', weight: 7 },
-                    ]
-                    : [
-                        { kind: 'normal', weight: Math.max(30, 45 - (completedPhases - 3) * 5) },
-                        { kind: 'fast', weight: 25 },
-                        { kind: 'heavy', weight: Math.min(22, 17 + (completedPhases - 3) * 2) },
-                        { kind: 'ranged', weight: Math.min(15, 10 + (completedPhases - 3) * 2) },
-                        { kind: 'elite', weight: Math.min(12, 3 + (completedPhases - 3) * 3) },
-                    ];
+    private getSpawnPhase(): DifficultyLevel['spawnPhases'][number] {
+        let phase = ACTIVE_DIFFICULTY.spawnPhases[0];
+
+        for (const candidate of ACTIVE_DIFFICULTY.spawnPhases) {
+            if (this.scene.time.now < candidate.startsAt) {
+                break;
+            }
+
+            phase = candidate;
+        }
+
+        return phase;
+    }
+
+    private chooseEnemy(completedMinutes: number): { armored: boolean; kind: EnemyKind } {
+        const phase = this.getSpawnPhase();
+        const options = phase.weights;
 
         const totalWeight = options.reduce((total, option) => total + option.weight, 0);
         let roll = Math.random() * totalWeight;
@@ -151,7 +133,13 @@ export class EnemySpawner {
         }
 
         const canBeArmored = kind === 'normal' || kind === 'heavy' || kind === 'elite';
-        const armored = canBeArmored && Math.random() < Math.min(0.1 + completedPhases * 0.04, 0.35);
+        const armor = ACTIVE_DIFFICULTY.armor;
+        const armored = phase.armored
+            && canBeArmored
+            && Math.random() < Math.min(
+                armor.initialChance + completedMinutes * armor.chanceGrowthPerMinute,
+                armor.maxChance,
+            );
 
         return { armored, kind };
     }

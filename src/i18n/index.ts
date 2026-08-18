@@ -18,16 +18,15 @@ const translations: Record<Locale, TranslationValues> = {
         'language.spanish': 'Español',
         'language.title': 'Idioma',
         'menu.back': 'Volver',
-        'menu.characterPlaceholder': 'La funcion de cada personaje llegara en una futura actualizacion.',
         'menu.gold': 'Oro: {gold}',
         'menu.main': 'Menu principal',
         'menu.metaProgression': 'Mejoras',
         'menu.newGame': 'Nueva partida',
+        'menu.patchNotes': 'Notas de parche',
         'menu.selectCharacter': 'Elige personaje',
         'menu.start': 'Empezar partida',
         'menu.title': 'Rogue Heaven',
-        'character.ranger': 'Explorador',
-        'character.vanguard': 'Vanguardia',
+        'character.rogue': 'Pícaro',
         'meta.autoAim.description': 'Desbloquea el apuntado automatico.',
         'meta.autoAim.name': 'Apuntado automatico',
         'meta.autoFire.description': 'Desbloquea el disparo automatico.',
@@ -35,10 +34,8 @@ const translations: Record<Locale, TranslationValues> = {
         'meta.cameraRange.description': 'Aumenta el alcance de la camara.',
         'meta.cameraRange.name': 'Alcance de camara',
         'meta.category.baseStats': 'Estadisticas base',
-        'meta.category.characters': 'Personajes',
         'meta.category.ingameUpgrades': 'Mejoras ingame',
         'meta.category.weapons': 'Armas',
-        'meta.character.description': 'Desbloquea este personaje.',
         'meta.comingSoon': 'Los logros y las compras llegaran proximamente.',
         'meta.requires': 'Requiere: {achievement}\nCoste: {gold} oro',
         'meta.title': 'Metaprogresion',
@@ -92,6 +89,27 @@ const translations: Record<Locale, TranslationValues> = {
         'pause.restartConfirm': 'Si, reiniciar',
         'pause.restartQuestion': 'Volver a empezar desde cero?',
         'pause.title': 'Pausado',
+        'patchNotes.title': 'Notas de parche',
+        'patchNotes.content': `Dificultad 1
+
+- La partida empieza solo con enemigos básicos.
+- Los rápidos aparecen en el minuto 2.
+- Los enemigos a distancia llegan en el minuto 3.
+- Los enemigos acorazados comienzan a aparecer en el minuto 4.
+- Los élites entran en las oleadas estándar en el minuto 6 y también aparecen cada 2 minutos.
+- La cantidad de enemigos aumenta a los 1:30 y 3:30.
+- La vida y la velocidad de los enemigos crecen con el tiempo.
+- Los jefes aparecen en los minutos 5 y 10.
+
+Armas
+
+- Conseguir una nueva arma ahora requiere una mejora épica.
+- El arco tiene menos duración de proyectil: 800 ms.
+- La ballesta tiene menos duración de proyectil: 1000 ms.
+
+Personaje inicial
+
+- Juegas como el Pícaro, equipado con dagas.`,
         'rarity.common': 'Comun',
         'rarity.epic': 'Epica',
         'rarity.legendary': 'Legendaria',
@@ -124,6 +142,7 @@ const translations: Record<Locale, TranslationValues> = {
         'weapon.cannon': 'Cañon',
         'weapon.crossbow': 'Ballesta',
         'weapon.dagger': 'Daga',
+        'weapon.daggers': 'Dagas',
         'weapon.staff': 'Vara de mago',
         'win.title': 'Victoria',
     },
@@ -140,16 +159,15 @@ const translations: Record<Locale, TranslationValues> = {
         'language.spanish': 'Español',
         'language.title': 'Language',
         'menu.back': 'Back',
-        'menu.characterPlaceholder': 'Character roles will arrive in a future update.',
         'menu.gold': 'Gold: {gold}',
         'menu.main': 'Main menu',
         'menu.metaProgression': 'Upgrades',
         'menu.newGame': 'New game',
+        'menu.patchNotes': 'Patch notes',
         'menu.selectCharacter': 'Choose character',
         'menu.start': 'Start game',
         'menu.title': 'Rogue',
-        'character.ranger': 'Ranger',
-        'character.vanguard': 'Vanguard',
+        'character.rogue': 'Rogue',
         'meta.autoAim.description': 'Unlock automatic aiming.',
         'meta.autoAim.name': 'Auto aim',
         'meta.autoFire.description': 'Unlock automatic firing.',
@@ -157,10 +175,8 @@ const translations: Record<Locale, TranslationValues> = {
         'meta.cameraRange.description': 'Increase camera range.',
         'meta.cameraRange.name': 'Camera range',
         'meta.category.baseStats': 'Base stats',
-        'meta.category.characters': 'Characters',
         'meta.category.ingameUpgrades': 'In-game upgrades',
         'meta.category.weapons': 'Weapons',
-        'meta.character.description': 'Unlock this character.',
         'meta.comingSoon': 'Achievements and purchases are coming soon.',
         'meta.requires': 'Requires: {achievement}\nCost: {gold} gold',
         'meta.title': 'Meta progression',
@@ -214,6 +230,27 @@ const translations: Record<Locale, TranslationValues> = {
         'pause.restartConfirm': 'Yes, restart',
         'pause.restartQuestion': 'Restart from the beginning?',
         'pause.title': 'Paused',
+        'patchNotes.title': 'Patch notes',
+        'patchNotes.content': `Difficulty 1
+
+- The run starts with basic enemies only.
+- Fast enemies appear in minute 2.
+- Ranged enemies arrive in minute 3.
+- Armored enemies begin appearing in minute 4.
+- Elites join standard waves in minute 6 and also appear every 2 minutes.
+- Enemy numbers increase at 1:30 and 3:30.
+- Enemy health and speed grow over time.
+- Bosses appear in minutes 5 and 10.
+
+Weapons
+
+- New weapons now require an epic upgrade.
+- Bow projectile lifetime reduced to 800 ms.
+- Crossbow projectile lifetime reduced to 1000 ms.
+
+Starting character
+
+- Play as the Rogue, equipped with daggers.`,
         'rarity.common': 'Common',
         'rarity.epic': 'Epic',
         'rarity.legendary': 'Legendary',
@@ -246,6 +283,7 @@ const translations: Record<Locale, TranslationValues> = {
         'weapon.cannon': 'Cannon',
         'weapon.crossbow': 'Crossbow',
         'weapon.dagger': 'Dagger',
+        'weapon.daggers': 'Daggers',
         'weapon.staff': 'Mage staff',
         'win.title': 'Victory',
     },
@@ -291,8 +329,7 @@ const translations: Record<Locale, TranslationValues> = {
         'stat.maxHealth': '最大体力',
         'stat.movementSpeed': '移動速度',
         'stat.pickupRange': '取得範囲',
-        'character.ranger': 'レンジャー',
-        'character.vanguard': 'ヴァンガード',
+        'character.rogue': 'ローグ',
         'controls.aim': 'マウスまたは右スティックで照準。クリックまたは A / X で攻撃。',
         'controls.auto': '自動モード: 右クリックまたは B / O。',
         'controls.move': 'WASD、矢印キー、方向パッドまたは左スティックで移動',
@@ -305,11 +342,11 @@ const translations: Record<Locale, TranslationValues> = {
         'language.spanish': 'Español',
         'language.title': '言語',
         'menu.back': '戻る',
-        'menu.characterPlaceholder': 'キャラクターごとの役割は今後のアップデートで追加されます。',
         'menu.gold': 'ゴールド: {gold}',
         'menu.main': 'メインメニュー',
         'menu.metaProgression': '強化',
         'menu.newGame': 'ニューゲーム',
+        'menu.patchNotes': 'パッチノート',
         'menu.selectCharacter': 'キャラクターを選択',
         'menu.start': 'ゲーム開始',
         'menu.title': 'Rogue Heaven',
@@ -320,10 +357,8 @@ const translations: Record<Locale, TranslationValues> = {
         'meta.cameraRange.description': 'カメラの表示範囲を広げる。',
         'meta.cameraRange.name': 'カメラ範囲',
         'meta.category.baseStats': '基本ステータス',
-        'meta.category.characters': 'キャラクター',
         'meta.category.ingameUpgrades': 'ゲーム内強化',
         'meta.category.weapons': '武器',
-        'meta.character.description': 'このキャラクターを解放する。',
         'meta.comingSoon': '実績と購入機能は近日追加予定です。',
         'meta.requires': '必要実績: {achievement}\nコスト: {gold} ゴールド',
         'meta.title': 'メタプログレッション',
@@ -336,6 +371,27 @@ const translations: Record<Locale, TranslationValues> = {
         'pause.restartConfirm': 'はい、やり直す',
         'pause.restartQuestion': '最初からやり直しますか？',
         'pause.title': '一時停止',
+        'patchNotes.title': 'パッチノート',
+        'patchNotes.content': `難易度 1
+
+- 開始時は基本の敵だけが出現します。
+- 2 分目に高速の敵が出現します。
+- 3 分目に遠距離の敵が出現します。
+- 4 分目から装甲を持つ敵が出現します。
+- 6 分目からエリートが通常のウェーブに加わり、2 分ごとにも出現します。
+- 敵の数は 1:30 と 3:30 に増加します。
+- 敵の体力と速度は時間とともに上昇します。
+- ボスは 5 分目と 10 分目に出現します。
+
+武器
+
+- 新しい武器の取得にはエピックのアップグレードが必要です。
+- 弓の投射物の持続時間を 800 ms に短縮しました。
+- クロスボウの投射物の持続時間を 1000 ms に短縮しました。
+
+開始キャラクター
+
+- 短剣を装備したローグでプレイします。`,
         'rarity.common': 'コモン',
         'rarity.epic': 'エピック',
         'rarity.legendary': 'レジェンダリー',
@@ -368,6 +424,7 @@ const translations: Record<Locale, TranslationValues> = {
         'weapon.cannon': '大砲',
         'weapon.crossbow': 'クロスボウ',
         'weapon.dagger': '短剣',
+        'weapon.daggers': '短剣',
         'weapon.staff': '魔術師の杖',
         'win.title': '勝利',
     },

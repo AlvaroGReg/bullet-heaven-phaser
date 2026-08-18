@@ -142,7 +142,7 @@ export class UpgradeSystem {
         return this.createFixedUpgrade(
             'weapon',
             this.getWeaponName(weapon),
-            'rare',
+            'epic',
             i18n.t('upgrade.weapon.description'),
             () => this.weapons.equipWeapon(weapon),
         );

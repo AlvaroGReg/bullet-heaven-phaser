@@ -5,8 +5,6 @@ import type { Player } from '../entities/createPlayer';
 import { MAP_HEIGHT, MAP_WIDTH } from '../game/constants';
 import { AchievementSystem } from '../game/Achievements';
 import { metaProgress } from '../game/MetaProgress';
-import { PLAYER_CHARACTERS } from '../game/playerCharacters';
-import type { PlayerCharacter } from '../game/playerCharacters';
 import { PlayerStats } from '../game/PlayerStats';
 import { i18n } from '../i18n';
 import { CombatSystem } from '../systems/CombatSystem';
@@ -63,16 +61,10 @@ export class GameScene extends Phaser.Scene {
 
     private upgradeCards: Phaser.GameObjects.Text[] = [];
 
-    private character: PlayerCharacter = PLAYER_CHARACTERS[0];
-
     private completed = false;
 
     public constructor() {
         super('game');
-    }
-
-    public init(data: { character?: PlayerCharacter }): void {
-        this.character = data.character ?? PLAYER_CHARACTERS[0];
     }
 
     public create(): void {
@@ -85,7 +77,7 @@ export class GameScene extends Phaser.Scene {
         createArena(this);
         createRogueTextures(this);
 
-        this.player = createPlayer(this, MAP_WIDTH / 2, MAP_HEIGHT / 2, this.character);
+        this.player = createPlayer(this, MAP_WIDTH / 2, MAP_HEIGHT / 2);
         const enemy = createEnemy(this, MAP_WIDTH / 2 - 360, MAP_HEIGHT / 2);
         this.enemies = this.physics.add.group();
         this.enemies.add(enemy);
@@ -310,7 +302,7 @@ export class GameScene extends Phaser.Scene {
     };
 
     private restartGame = (): void => {
-        this.scene.restart({ character: this.character });
+        this.scene.restart();
     };
 
     private returnToMenu = (): void => {

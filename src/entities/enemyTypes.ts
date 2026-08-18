@@ -33,7 +33,7 @@ export const ENEMY_DEFINITIONS: Record<EnemyKind, EnemyDefinition> = {
         experienceMultiplier: 1.2,
         health: 3,
         radius: 16,
-        speed: 230,
+        speed: 200,
     },
     heavy: {
         color: 0xa78bfa,

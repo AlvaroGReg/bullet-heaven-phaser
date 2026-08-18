@@ -2,20 +2,17 @@ import Phaser from 'phaser';
 import { ACHIEVEMENTS } from '../game/Achievements';
 import type { AchievementDefinition } from '../game/Achievements';
 import { META_UPGRADES, metaProgress } from '../game/MetaProgress';
-import { PLAYER_CHARACTERS } from '../game/playerCharacters';
-import type { PlayerCharacter } from '../game/playerCharacters';
 import { i18n } from '../i18n';
 import type { Locale } from '../i18n';
+import { createRogueTextures, DAGGER_TEXTURE, ROGUE_TEXTURE } from '../sprites/rogue';
 import { GRIM, grimButtonStyle, grimTextStyle } from '../ui/grimTheme';
 
-type MenuView = 'achievements' | 'main' | 'characters' | 'meta';
+type MenuView = 'achievements' | 'main' | 'characters' | 'meta' | 'patchNotes';
 
 export class MenuScene extends Phaser.Scene {
     private objects: Phaser.GameObjects.GameObject[] = [];
 
     private view: MenuView = 'main';
-
-    private selectedCharacter: PlayerCharacter = PLAYER_CHARACTERS[0];
 
     private languageMenuOpen = false;
 
@@ -28,6 +25,7 @@ export class MenuScene extends Phaser.Scene {
     }
 
     public create(): void {
+        createRogueTextures(this);
         this.removeLanguageListener = i18n.onChange(this.render);
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
         this.render();
@@ -50,6 +48,8 @@ export class MenuScene extends Phaser.Scene {
             this.renderCharacterSelection();
         } else if (this.view === 'meta') {
             this.renderMetaProgression();
+        } else if (this.view === 'patchNotes') {
+            this.renderPatchNotes();
         } else {
             this.renderMainMenu();
         }
@@ -72,32 +72,21 @@ export class MenuScene extends Phaser.Scene {
             this.view = 'achievements';
             this.render();
         }, '#475569');
+        this.addButton(i18n.t('menu.patchNotes'), 570, () => {
+            this.view = 'patchNotes';
+            this.render();
+        }, '#475569');
     }
 
     private renderCharacterSelection(): void {
         this.addTitle(i18n.t('menu.selectCharacter'), 105);
-        this.addLabel(i18n.t('menu.characterPlaceholder'), 155, '#cbd5e1');
+        this.addLabel(i18n.t('character.rogue'), 160, '#cbd5e1');
+        this.addObject(this.add.image(this.scale.width / 2, 255, ROGUE_TEXTURE).setScale(4));
+        this.addLabel(i18n.t('weapon.daggers'), 370, '#fcd34d');
+        this.addObject(this.add.image(this.scale.width / 2, 435, DAGGER_TEXTURE).setScale(4));
 
-        PLAYER_CHARACTERS.forEach((character, index) => {
-            const x = this.scale.width / 2 - 170 + index * 340;
-            const selected = character.id === this.selectedCharacter.id;
-            const card = this.add.text(x, 290, i18n.t(character.nameKey), {
-                align: 'center',
-                ...grimButtonStyle(selected ? '#1d4ed8' : GRIM.panelRaised, '26px'),
-            })
-                .setOrigin(0.5)
-                .setFixedSize(280, 150)
-                .setPadding(16)
-                .setInteractive({ useHandCursor: true })
-                .on(Phaser.Input.Events.POINTER_DOWN, () => {
-                    this.selectedCharacter = character;
-                    this.render();
-                });
-            this.objects.push(card);
-        });
-
-        this.addButton(i18n.t('menu.start'), 470, () => this.scene.start('game', { character: this.selectedCharacter }), '#16a34a');
-        this.addButton(i18n.t('menu.back'), 545, () => {
+        this.addButton(i18n.t('menu.start'), 530, () => this.scene.start('game'), '#16a34a');
+        this.addButton(i18n.t('menu.back'), 605, () => {
             this.view = 'main';
             this.render();
         }, '#475569');
@@ -108,9 +97,9 @@ export class MenuScene extends Phaser.Scene {
         this.addLabel(i18n.t('menu.gold', { gold: metaProgress.currentGold }), 120, '#fcd34d');
         this.addLabel(i18n.t('meta.comingSoon'), 155, '#cbd5e1');
 
-        const columns = ['baseStats', 'characters', 'weapons', 'ingameUpgrades'] as const;
+        const columns = ['baseStats', 'weapons', 'ingameUpgrades'] as const;
         columns.forEach((category, index) => {
-            const x = 175 + index * 310;
+            const x = 330 + index * 310;
             const upgrades = META_UPGRADES.filter((upgrade) => upgrade.category === category);
             const text = [i18n.t(`meta.category.${category}`), ...upgrades.map((upgrade) => (
                 `${i18n.t(upgrade.nameKey)}\n${i18n.t(upgrade.descriptionKey)}\n${i18n.t('meta.requires', { achievement: i18n.t(upgrade.achievementKey), gold: upgrade.goldCost })}`
@@ -125,6 +114,20 @@ export class MenuScene extends Phaser.Scene {
         });
 
         this.addButton(i18n.t('menu.back'), 610, () => {
+            this.view = 'main';
+            this.render();
+        }, '#475569');
+    }
+
+    private renderPatchNotes(): void {
+        this.addTitle(i18n.t('patchNotes.title'), 75);
+        this.addObject(this.add.text(this.scale.width / 2, 350, i18n.t('patchNotes.content'), {
+            align: 'left',
+            ...grimTextStyle(GRIM.text, '18px'),
+            backgroundColor: GRIM.panel,
+            wordWrap: { width: 820 },
+        }).setOrigin(0.5).setFixedSize(860, 500).setPadding(24));
+        this.addButton(i18n.t('menu.back'), 650, () => {
             this.view = 'main';
             this.render();
         }, '#475569');
