@@ -13,6 +13,12 @@
       "skillPath": "skills/game-assets/SKILL.md",
       "computedHash": "11874de3054e82b21db3b090e45f65555b7540b22b8de98f692a38d7324acda8"
     },
+    "improve-codebase-architecture": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/improve-codebase-architecture/SKILL.md",
+      "computedHash": "f7fd27287067900e816b87a8917347424ad6780435ce4157d69ba8c5e8e13fba"
+    },
     "phaser": {
       "source": "playableintelligence/game-creator",
       "sourceType": "github",
