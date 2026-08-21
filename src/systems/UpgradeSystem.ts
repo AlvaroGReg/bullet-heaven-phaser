@@ -76,61 +76,61 @@ export class UpgradeSystem {
     }
 
     private createExperienceUpgrade(level: number): Upgrade {
-        return this.createUpgrade('experience', 'upgrade.experience', level, (value) => i18n.t('upgrade.experience.description', { value: value * 10 }), (value) => {
+        return this.createUpgrade('experience', 'upgrade.experience.name', level, (value) => i18n.t('upgrade.experience.description', { value: value * 10 }), (value) => {
             this.stats.experienceMultiplier += value * 0.1;
         });
     }
 
     private createDamageUpgrade(level: number): Upgrade {
-        return this.createUpgrade('damage', 'upgrade.damage', level, (value) => i18n.t('upgrade.damage.description', { value }), (value) => {
+        return this.createUpgrade('damage', 'upgrade.damage.name', level, (value) => i18n.t('upgrade.damage.description', { value }), (value) => {
             this.stats.damage += value;
         });
     }
 
     private createAttackSpeedUpgrade(level: number): Upgrade {
-        return this.createUpgrade('attackSpeed', 'upgrade.attackSpeed', level, (value) => i18n.t('upgrade.attackSpeed.description', { value: value * 5 }), (value) => {
+        return this.createUpgrade('attackSpeed', 'upgrade.attackSpeed.name', level, (value) => i18n.t('upgrade.attackSpeed.description', { value: value * 5 }), (value) => {
             this.stats.attackSpeedMultiplier += value * 0.05;
         });
     }
 
     private createProjectileSpeedUpgrade(level: number): Upgrade {
-        return this.createUpgrade('projectileSpeed', 'upgrade.projectileSpeed', level, (value) => i18n.t('upgrade.projectileSpeed.description', { value: value * 40 }), (value) => {
+        return this.createUpgrade('projectileSpeed', 'upgrade.projectileSpeed.name', level, (value) => i18n.t('upgrade.projectileSpeed.description', { value: value * 40 }), (value) => {
             this.stats.projectileSpeedBonus += value * 40;
         });
     }
 
     private createProjectileLifetimeUpgrade(level: number): Upgrade {
-        return this.createUpgrade('projectileLifetime', 'upgrade.projectileLifetime', level, (value) => i18n.t('upgrade.projectileLifetime.description', { value: value * 100 }), (value) => {
+        return this.createUpgrade('projectileLifetime', 'upgrade.projectileLifetime.name', level, (value) => i18n.t('upgrade.projectileLifetime.description', { value: value * 100 }), (value) => {
             this.stats.projectileLifetimeBonus += value * 100;
         });
     }
 
     private createPiercingUpgrade(level: number): Upgrade {
-        return this.createUpgrade('piercing', 'upgrade.piercing', level, (value) => i18n.t('upgrade.piercing.description', { value: Math.ceil(value / 2) }), (value) => {
+        return this.createUpgrade('piercing', 'upgrade.piercing.name', level, (value) => i18n.t('upgrade.piercing.description', { value: Math.ceil(value / 2) }), (value) => {
             this.stats.projectilePiercing += Math.ceil(value / 2);
         });
     }
 
     private createMovementSpeedUpgrade(level: number): Upgrade {
-        return this.createUpgrade('movementSpeed', 'upgrade.movementSpeed', level, (value) => i18n.t('upgrade.movementSpeed.description', { value: value * 12 }), (value) => {
+        return this.createUpgrade('movementSpeed', 'upgrade.movementSpeed.name', level, (value) => i18n.t('upgrade.movementSpeed.description', { value: value * 12 }), (value) => {
             this.stats.movementSpeed += value * 12;
         });
     }
 
     private createHealthUpgrade(level: number): Upgrade {
-        return this.createUpgrade('health', 'upgrade.health', level, (value) => i18n.t('upgrade.health.description', { value }), (value) => {
+        return this.createUpgrade('health', 'upgrade.health.name', level, (value) => i18n.t('upgrade.health.description', { value }), (value) => {
             this.increaseMaxHealth(value);
         });
     }
 
     private createRegenerationUpgrade(level: number): Upgrade {
-        return this.createUpgrade('regeneration', 'upgrade.regeneration', level, (value) => i18n.t('upgrade.regeneration.description', { value: (value * 0.1).toFixed(1) }), (value) => {
+        return this.createUpgrade('regeneration', 'upgrade.regeneration.name', level, (value) => i18n.t('upgrade.regeneration.description', { value: (value * 0.1).toFixed(1) }), (value) => {
             this.stats.healthRegeneration += value * 0.1;
         });
     }
 
     private createPickupRangeUpgrade(level: number): Upgrade {
-        return this.createUpgrade('pickupRange', 'upgrade.pickupRange', level, (value) => i18n.t('upgrade.pickupRange.description', { value: value * 20 }), (value) => {
+        return this.createUpgrade('pickupRange', 'upgrade.pickupRange.name', level, (value) => i18n.t('upgrade.pickupRange.description', { value: value * 20 }), (value) => {
             this.stats.pickupRange += value * 20;
         });
     }

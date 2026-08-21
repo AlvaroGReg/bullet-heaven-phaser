@@ -5,7 +5,18 @@ import { META_UPGRADES, metaProgress } from '../game/MetaProgress';
 import { i18n } from '../i18n';
 import type { Locale } from '../i18n';
 import { createRogueTextures, DAGGER_TEXTURE, ROGUE_TEXTURE } from '../sprites/rogue';
-import { GRIM, grimButtonStyle, grimTextStyle } from '../ui/grimTheme';
+import {
+    createButton,
+    createFrame,
+    createNavRow,
+    createPanelBorder,
+    createRuleMark,
+    GRIM,
+    GRIM_INT,
+    grimHeadingStyle,
+    grimTextStyle,
+} from '../ui/grimTheme';
+import type { ButtonVariant } from '../ui/grimTheme';
 
 type MenuView = 'achievements' | 'main' | 'characters' | 'meta' | 'patchNotes';
 
@@ -39,8 +50,9 @@ export class MenuScene extends Phaser.Scene {
             this.scale.height / 2,
             this.scale.width,
             this.scale.height,
-            0x080b10,
+            GRIM_INT.bg,
         ).setDepth(-1));
+        this.addObject(createFrame(this));
 
         if (this.view === 'achievements') {
             this.renderAchievements();
@@ -58,44 +70,52 @@ export class MenuScene extends Phaser.Scene {
     };
 
     private renderMainMenu(): void {
-        this.addTitle(i18n.t('menu.title'), 170);
-        this.addLabel(i18n.t('menu.gold', { gold: metaProgress.currentGold }), 230, '#fcd34d');
-        this.addButton(i18n.t('menu.newGame'), 330, () => {
-            this.view = 'characters';
-            this.render();
-        }, '#2563eb');
-        this.addButton(i18n.t('menu.metaProgression'), 410, () => {
-            this.view = 'meta';
-            this.render();
-        }, '#475569');
-        this.addButton(i18n.t('achievement.title'), 490, () => {
-            this.view = 'achievements';
-            this.render();
-        }, '#475569');
-        this.addButton(i18n.t('menu.patchNotes'), 570, () => {
-            this.view = 'patchNotes';
-            this.render();
-        }, '#475569');
+        this.addTitle(i18n.t('menu.title'), 150);
+        this.addLabel(i18n.t('menu.gold', { gold: metaProgress.currentGold }), 205, GRIM.accentText);
+
+        const rowWidth = 440;
+        const startY = 310;
+        const rows: Array<[string, () => void]> = [
+            [i18n.t('menu.newGame'), () => {
+                this.view = 'characters';
+                this.render();
+            }],
+            [i18n.t('menu.metaProgression'), () => {
+                this.view = 'meta';
+                this.render();
+            }],
+            [i18n.t('achievement.title'), () => {
+                this.view = 'achievements';
+                this.render();
+            }],
+            [i18n.t('menu.patchNotes'), () => {
+                this.view = 'patchNotes';
+                this.render();
+            }],
+        ];
+        rows.forEach(([label, onClick], index) => {
+            this.addObject(createNavRow(this, this.scale.width / 2, startY + index * 62, rowWidth, label, onClick));
+        });
     }
 
     private renderCharacterSelection(): void {
         this.addTitle(i18n.t('menu.selectCharacter'), 105);
-        this.addLabel(i18n.t('character.rogue'), 160, '#cbd5e1');
+        this.addLabel(i18n.t('character.rogue'), 160, GRIM.text);
         this.addObject(this.add.image(this.scale.width / 2, 255, ROGUE_TEXTURE).setScale(4));
-        this.addLabel(i18n.t('weapon.daggers'), 370, '#fcd34d');
+        this.addLabel(i18n.t('weapon.daggers'), 370, GRIM.accentText);
         this.addObject(this.add.image(this.scale.width / 2, 435, DAGGER_TEXTURE).setScale(4));
 
-        this.addButton(i18n.t('menu.start'), 530, () => this.scene.start('game'), '#16a34a');
+        this.addButton(i18n.t('menu.start'), 530, () => this.scene.start('game'), 'primary');
         this.addButton(i18n.t('menu.back'), 605, () => {
             this.view = 'main';
             this.render();
-        }, '#475569');
+        }, 'secondary');
     }
 
     private renderMetaProgression(): void {
         this.addTitle(i18n.t('meta.title'), 75);
-        this.addLabel(i18n.t('menu.gold', { gold: metaProgress.currentGold }), 120, '#fcd34d');
-        this.addLabel(i18n.t('meta.comingSoon'), 155, '#cbd5e1');
+        this.addLabel(i18n.t('menu.gold', { gold: metaProgress.currentGold }), 120, GRIM.accentText);
+        this.addLabel(i18n.t('meta.comingSoon'), 150, GRIM.mutedText);
 
         const columns = ['baseStats', 'weapons', 'ingameUpgrades'] as const;
         columns.forEach((category, index) => {
@@ -104,33 +124,32 @@ export class MenuScene extends Phaser.Scene {
             const text = [i18n.t(`meta.category.${category}`), ...upgrades.map((upgrade) => (
                 `${i18n.t(upgrade.nameKey)}\n${i18n.t(upgrade.descriptionKey)}\n${i18n.t('meta.requires', { achievement: i18n.t(upgrade.achievementKey), gold: upgrade.goldCost })}`
             ))].join('\n\n');
-            const card = this.add.text(x, 330, text, {
+            this.addObject(createPanelBorder(this, x, 330, 280, 315));
+            this.addObject(this.add.text(x, 330, text, {
                 align: 'center',
                 ...grimTextStyle(GRIM.text, '16px'),
-                backgroundColor: GRIM.panel,
                 wordWrap: { width: 260 },
-            }).setOrigin(0.5).setFixedSize(280, 315).setPadding(16);
-            this.objects.push(card);
+            }).setOrigin(0.5).setFixedSize(280, 315).setPadding(16));
         });
 
         this.addButton(i18n.t('menu.back'), 610, () => {
             this.view = 'main';
             this.render();
-        }, '#475569');
+        }, 'secondary');
     }
 
     private renderPatchNotes(): void {
         this.addTitle(i18n.t('patchNotes.title'), 75);
+        this.addObject(createPanelBorder(this, this.scale.width / 2, 350, 860, 500));
         this.addObject(this.add.text(this.scale.width / 2, 350, i18n.t('patchNotes.content'), {
             align: 'left',
             ...grimTextStyle(GRIM.text, '18px'),
-            backgroundColor: GRIM.panel,
             wordWrap: { width: 820 },
         }).setOrigin(0.5).setFixedSize(860, 500).setPadding(24));
         this.addButton(i18n.t('menu.back'), 650, () => {
             this.view = 'main';
             this.render();
-        }, '#475569');
+        }, 'secondary');
     }
 
     private renderAchievements(): void {
@@ -142,7 +161,7 @@ export class MenuScene extends Phaser.Scene {
         this.addLabel(
             `${i18n.t('achievement.summary', { completed: unlockedCount, total: ACHIEVEMENTS.length })} · ${i18n.t('achievement.page', { current: this.achievementPage + 1, total: pageCount })}`,
             115,
-            '#fcd34d',
+            GRIM.accentText,
         );
 
         for (let column = 0; column < 4; column += 1) {
@@ -161,8 +180,10 @@ export class MenuScene extends Phaser.Scene {
                     });
                 return `${this.getAchievementLabel(achievement)}\n${status}`;
             }).join('\n\n');
-            this.addObject(this.add.text(175 + column * 310, 365, text, {
-                align: 'center', ...grimTextStyle(GRIM.text, '13px'), backgroundColor: GRIM.panel,
+            const x = 175 + column * 310;
+            this.addObject(createPanelBorder(this, x, 365, 280, 450));
+            this.addObject(this.add.text(x, 365, text, {
+                align: 'center', ...grimTextStyle(GRIM.text, '13px'),
                 wordWrap: { width: 260 },
             }).setOrigin(0.5).setFixedSize(280, 450).setPadding(12));
         }
@@ -171,18 +192,18 @@ export class MenuScene extends Phaser.Scene {
             this.addButton(i18n.t('achievement.previous'), 650, () => {
                 this.achievementPage -= 1;
                 this.render();
-            }, '#475569', this.scale.width / 2 - 180);
+            }, 'secondary', this.scale.width / 2 - 180);
         }
         if (this.achievementPage < pageCount - 1) {
             this.addButton(i18n.t('achievement.next'), 650, () => {
                 this.achievementPage += 1;
                 this.render();
-            }, '#475569', this.scale.width / 2 + 180);
+            }, 'secondary', this.scale.width / 2 + 180);
         }
         this.addButton(i18n.t('menu.back'), 650, () => {
             this.view = 'main';
             this.render();
-        }, '#475569');
+        }, 'secondary');
     }
 
     private getAchievementLabel(achievement: AchievementDefinition): string {
@@ -213,8 +234,9 @@ export class MenuScene extends Phaser.Scene {
     }
 
     private addTitle(text: string, y: number): void {
-        this.addObject(this.add.text(this.scale.width / 2, y, text, {
-            ...grimTextStyle(GRIM.text, '44px'),
+        this.addObject(createRuleMark(this, this.scale.width / 2, y - 46));
+        this.addObject(this.add.text(this.scale.width / 2, y, text.toUpperCase(), {
+            ...grimHeadingStyle(GRIM.text, '44px'),
         }).setOrigin(0.5));
     }
 
@@ -224,35 +246,38 @@ export class MenuScene extends Phaser.Scene {
         }).setOrigin(0.5));
     }
 
-    private addButton(text: string, y: number, callback: () => void, color: string, x = this.scale.width / 2): void {
-        this.addObject(this.add.text(x, y, text, {
-            ...grimButtonStyle(color, '22px'),
-        }).setOrigin(0.5).setPadding(18, 10).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, callback));
+    private addButton(text: string, y: number, callback: () => void, variant: ButtonVariant, x = this.scale.width / 2): void {
+        const button = createButton(this, x, y, text, variant, '20px');
+        button.on(Phaser.Input.Events.POINTER_DOWN, callback);
+        this.addObject(button);
     }
 
     private addLanguageMenu(): void {
-        const x = this.scale.width - 42;
-        const flag = i18n.locale === 'es' ? '🇪🇸' : i18n.locale === 'ja' ? '🇯🇵' : '🇬🇧';
-        this.addObject(this.add.text(x, 42, flag, {
-            ...grimButtonStyle(GRIM.panelRaised, '24px'),
-        }).setOrigin(0.5).setPadding(10, 6).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, () => {
+        const x = this.scale.width - 46;
+        const toggle = createButton(this, x, 42, i18n.locale.toUpperCase(), 'secondary', '16px');
+        toggle.on(Phaser.Input.Events.POINTER_DOWN, () => {
             this.languageMenuOpen = !this.languageMenuOpen;
             this.render();
-        }));
+        });
+        this.addObject(toggle);
 
         if (!this.languageMenuOpen) {
             return;
         }
 
-        this.addObject(this.add.text(this.scale.width - 150, 96, '🇬🇧 English', {
-            ...grimButtonStyle(GRIM.panelRaised, '18px'),
-        }).setOrigin(0.5).setPadding(14, 9).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, () => this.setLocale('en')));
-        this.addObject(this.add.text(this.scale.width - 150, 146, '🇪🇸 Español', {
-            ...grimButtonStyle(GRIM.panelRaised, '18px'),
-        }).setOrigin(0.5).setPadding(14, 9).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, () => this.setLocale('es')));
-        this.addObject(this.add.text(this.scale.width - 150, 196, '🇯🇵 日本語', {
-            ...grimButtonStyle(GRIM.panelRaised, '18px'),
-        }).setOrigin(0.5).setPadding(14, 9).setInteractive({ useHandCursor: true }).on(Phaser.Input.Events.POINTER_DOWN, () => this.setLocale('ja')));
+        const options: Array<[Locale, string]> = [['en', 'EN'], ['es', 'ES'], ['ja', 'JA']];
+        options.forEach(([locale, label], index) => {
+            const chip = createButton(
+                this,
+                x,
+                96 + index * 46,
+                label,
+                locale === i18n.locale ? 'primary' : 'secondary',
+                '16px',
+            );
+            chip.on(Phaser.Input.Events.POINTER_DOWN, () => this.setLocale(locale));
+            this.addObject(chip);
+        });
     }
 
     private addObject(gameObject: Phaser.GameObjects.GameObject): void {

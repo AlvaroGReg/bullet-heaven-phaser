@@ -1,7 +1,15 @@
 import Phaser from 'phaser';
 import { i18n } from '../i18n';
 import type { Locale } from '../i18n';
-import { GRIM, grimButtonStyle, grimTextStyle } from './grimTheme';
+import {
+    createButton,
+    createFrame,
+    createRuleMark,
+    GRIM,
+    grimHeadingStyle,
+    grimTextStyle,
+} from './grimTheme';
+import type { ButtonVariant } from './grimTheme';
 
 const CONTROLS_DURATION = 10_000;
 const BAR_WIDTH = 260;
@@ -34,6 +42,8 @@ export class GameHud {
     private menuObjects: Phaser.GameObjects.GameObject[] = [];
 
     private menuState: 'gameOver' | 'pause' | 'restartConfirmation' | 'victory' | undefined;
+
+    private languageMenuOpen = false;
 
     private currentLevel: number;
 
@@ -157,8 +167,8 @@ export class GameHud {
         this.menuState = 'gameOver';
         this.addMenuBackground();
         this.addMenuTitle(i18n.t('gameover.title'), 280);
-        this.addMenuButton(i18n.t('pause.restart'), 380, this.callbacks.onRestart, '#7f1d1d');
-        this.addMenuButton(i18n.t('menu.main'), 450, this.callbacks.onMainMenu, '#475569');
+        this.addMenuButton(i18n.t('pause.restart'), 380, this.callbacks.onRestart, 'secondary');
+        this.addMenuButton(i18n.t('menu.main'), 450, this.callbacks.onMainMenu, 'secondary');
     }
 
     public showVictory(): void {
@@ -167,7 +177,7 @@ export class GameHud {
         this.menuState = 'victory';
         this.addMenuBackground();
         this.addMenuTitle(i18n.t('win.title'), 280);
-        this.addMenuButton(i18n.t('menu.main'), 400, this.callbacks.onMainMenu, '#2563eb');
+        this.addMenuButton(i18n.t('menu.main'), 400, this.callbacks.onMainMenu, 'primary');
     }
 
     private getExperienceLabel(level: number): string {
@@ -204,7 +214,7 @@ export class GameHud {
             .setSize(size, size)
             .setScrollFactor(0)
             .setDepth(2)
-            .setInteractive(new Phaser.Geom.Rectangle(-size / 2, -size / 2, size, size), Phaser.Geom.Rectangle.Contains)
+            .setInteractive(new Phaser.Geom.Rectangle(0, 0, size, size), Phaser.Geom.Rectangle.Contains)
             .on(Phaser.Input.Events.POINTER_DOWN, this.callbacks.onTogglePause);
     }
 
@@ -213,13 +223,10 @@ export class GameHud {
         this.menuState = 'pause';
         this.addMenuBackground();
         this.addMenuTitle(i18n.t('pause.title'), 250);
-        this.addMenuButton(i18n.t('pause.continue'), 330, this.callbacks.onResume, '#1d4ed8');
-        this.addMenuButton(i18n.t('pause.restart'), 400, this.showRestartConfirmation, '#7f1d1d');
-        this.addMenuButton(i18n.t('menu.main'), 470, this.callbacks.onMainMenu, '#475569');
-        this.addMenuLabel(i18n.t('language.title'), 535);
-        this.addMenuButton(i18n.t('language.english'), 580, () => this.setLocale('en'), '#475569', 430);
-        this.addMenuButton(i18n.t('language.spanish'), 580, () => this.setLocale('es'), '#475569', 640);
-        this.addMenuButton(i18n.t('language.japanese'), 580, () => this.setLocale('ja'), '#475569', 850);
+        this.addMenuButton(i18n.t('pause.continue'), 330, this.callbacks.onResume, 'primary');
+        this.addMenuButton(i18n.t('pause.restart'), 400, this.showRestartConfirmation, 'secondary');
+        this.addMenuButton(i18n.t('menu.main'), 470, this.callbacks.onMainMenu, 'secondary');
+        this.addLanguageMenu();
     }
 
     private showRestartConfirmation = (): void => {
@@ -227,11 +234,15 @@ export class GameHud {
         this.menuState = 'restartConfirmation';
         this.addMenuBackground();
         this.addMenuTitle(i18n.t('pause.restartQuestion'), 280);
-        this.addMenuButton(i18n.t('pause.restartConfirm'), 360, this.callbacks.onRestart, '#7f1d1d');
-        this.addMenuButton(i18n.t('pause.restartCancel'), 430, () => this.showPauseMenu(), '#1d4ed8');
+        this.addMenuButton(i18n.t('pause.restartConfirm'), 360, this.callbacks.onRestart, 'secondary');
+        this.addMenuButton(i18n.t('pause.restartCancel'), 430, () => this.showPauseMenu(), 'primary');
     };
 
     private addMenuBackground(): void {
+        const isGameOver = this.menuState === 'gameOver';
+        const isVictory = this.menuState === 'victory';
+        const dimColor = isGameOver ? 0x030406 : 0x0d0f16;
+        const alpha = isGameOver ? 0.92 : isVictory ? 0.85 : 0.78;
         this.menuObjects.push(
             this.scene.add
                 .rectangle(
@@ -239,20 +250,26 @@ export class GameHud {
                     this.scene.scale.height / 2,
                     this.scene.scale.width,
                     this.scene.scale.height,
-                    0x080b10,
-                    0.82,
+                    dimColor,
+                    alpha,
                 )
                 .setScrollFactor(0)
                 .setDepth(20),
         );
+        this.menuObjects.push(createFrame(this.scene).setScrollFactor(0).setDepth(20));
     }
 
     private addMenuTitle(text: string, y: number): void {
         this.menuObjects.push(
+            createRuleMark(this.scene, this.scene.scale.width / 2, y - 50)
+                .setScrollFactor(0)
+                .setDepth(21),
+        );
+        this.menuObjects.push(
             this.scene.add
-                .text(this.scene.scale.width / 2, y, text, {
+                .text(this.scene.scale.width / 2, y, text.toUpperCase(), {
                     align: 'center',
-                    ...grimTextStyle(GRIM.text, '40px'),
+                    ...grimHeadingStyle(GRIM.text, '40px'),
                 })
                 .setOrigin(0.5)
                 .setScrollFactor(0)
@@ -260,27 +277,49 @@ export class GameHud {
         );
     }
 
-    private addMenuLabel(text: string, y: number): void {
-        this.menuObjects.push(
-            this.scene.add
-                .text(this.scene.scale.width / 2, y, text, this.textStyle(GRIM.mutedText, '18px'))
-                .setOrigin(0.5)
-                .setScrollFactor(0)
-                .setDepth(21),
-        );
+    private addLanguageMenu(): void {
+        const x = this.scene.scale.width - 46;
+        const toggleY = 110;
+        const toggle = createButton(this.scene, x, toggleY, i18n.locale.toUpperCase(), 'secondary', '16px');
+        toggle.setScrollFactor(0).setDepth(21);
+        toggle.on(Phaser.Input.Events.POINTER_DOWN, () => {
+            this.languageMenuOpen = !this.languageMenuOpen;
+            this.showPauseMenu();
+        });
+        this.menuObjects.push(toggle);
+
+        if (!this.languageMenuOpen) {
+            return;
+        }
+
+        const options: Array<[Locale, string]> = [['en', 'EN'], ['es', 'ES'], ['ja', 'JA']];
+        options.forEach(([locale, label], index) => {
+            const chip = createButton(
+                this.scene,
+                x,
+                toggleY + 54 + index * 46,
+                label,
+                locale === i18n.locale ? 'primary' : 'secondary',
+                '16px',
+            );
+            chip.setScrollFactor(0).setDepth(21);
+            chip.on(Phaser.Input.Events.POINTER_DOWN, () => this.setLocale(locale));
+            this.menuObjects.push(chip);
+        });
     }
 
-    private addMenuButton(text: string, y: number, callback: () => void, color: string, x = this.scene.scale.width / 2): void {
-        this.menuObjects.push(
-            this.scene.add
-                .text(x, y, text, grimButtonStyle(color, '22px'))
-                .setOrigin(0.5)
-                .setPadding(18, 10)
-                .setScrollFactor(0)
-                .setDepth(21)
-                .setInteractive({ useHandCursor: true })
-                .on(Phaser.Input.Events.POINTER_DOWN, callback),
-        );
+    private addMenuButton(
+        text: string,
+        y: number,
+        callback: () => void,
+        variant: ButtonVariant,
+        x = this.scene.scale.width / 2,
+        fontSize = '22px',
+    ): void {
+        const button = createButton(this.scene, x, y, text, variant, fontSize);
+        button.setScrollFactor(0).setDepth(21);
+        button.on(Phaser.Input.Events.POINTER_DOWN, callback);
+        this.menuObjects.push(button);
     }
 
     private clearMenu(): void {
@@ -289,6 +328,7 @@ export class GameHud {
     }
 
     private setLocale(locale: Locale): void {
+        this.languageMenuOpen = false;
         i18n.setLocale(locale);
     }
 

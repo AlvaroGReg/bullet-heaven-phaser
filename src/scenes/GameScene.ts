@@ -16,9 +16,61 @@ import { UpgradeSystem } from '../systems/UpgradeSystem';
 import type { Upgrade } from '../systems/UpgradeSystem';
 import { WeaponSystem } from '../systems/WeaponSystem';
 import { GameHud } from '../ui/GameHud';
-import { GRIM, grimTextStyle } from '../ui/grimTheme';
+import {
+    createDiamond,
+    createFrame,
+    createRuleMark,
+    GRIM,
+    GRIM_INT,
+    grimHeadingStyle,
+    grimLabelStyle,
+    grimTextStyle,
+} from '../ui/grimTheme';
 import { createArena } from '../world/createArena';
 import { createRogueTextures } from '../sprites/rogue';
+
+type RarityStyle = {
+    borderColor: number;
+    borderWidth: number;
+    labelColor: string;
+    chipFillHex?: string;
+    chipTextColor?: string;
+    glowAlpha?: number;
+    diamonds: number;
+};
+
+const RARITY_STYLES: Record<string, RarityStyle> = {
+    common: { borderColor: GRIM_INT.lineFine, borderWidth: 1, labelColor: GRIM.mutedText, diamonds: 0 },
+    uncommon: { borderColor: GRIM_INT.mutedText, borderWidth: 1, labelColor: GRIM.text, diamonds: 0 },
+    rare: { borderColor: GRIM_INT.accentMid, borderWidth: 1, labelColor: GRIM.accentText, diamonds: 0 },
+    epic: {
+        borderColor: GRIM_INT.accent,
+        borderWidth: 1,
+        labelColor: GRIM.accentText,
+        chipFillHex: GRIM.accentDeep,
+        chipTextColor: '#f5f4ff',
+        glowAlpha: 0.12,
+        diamonds: 1,
+    },
+    legendary: {
+        borderColor: GRIM_INT.accent,
+        borderWidth: 2,
+        labelColor: GRIM.accentText,
+        chipFillHex: GRIM.accentMid,
+        chipTextColor: '#f5f4ff',
+        glowAlpha: 0.18,
+        diamonds: 2,
+    },
+    mythic: {
+        borderColor: GRIM_INT.accentText,
+        borderWidth: 2,
+        labelColor: GRIM.accentText,
+        chipFillHex: GRIM.accent,
+        chipTextColor: GRIM.bg,
+        glowAlpha: 0.26,
+        diamonds: 3,
+    },
+};
 
 export class GameScene extends Phaser.Scene {
     private player!: Player;
@@ -59,9 +111,13 @@ export class GameScene extends Phaser.Scene {
 
     private upgradeOverlay?: Phaser.GameObjects.Rectangle;
 
+    private upgradeFrame?: Phaser.GameObjects.Container;
+
     private upgradeTitle?: Phaser.GameObjects.Text;
 
-    private upgradeCards: Phaser.GameObjects.Text[] = [];
+    private upgradeTitleRule?: Phaser.GameObjects.Container;
+
+    private upgradeCards: Phaser.GameObjects.Container[] = [];
 
     private completed = false;
 
@@ -211,13 +267,19 @@ export class GameScene extends Phaser.Scene {
         this.physics.pause();
         this.time.paused = true;
         this.upgradeOverlay = this.add
-            .rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x080b10, 0.86)
+            .rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0x0d0f16, 0.86)
             .setScrollFactor(0)
             .setDepth(10);
 
+        this.upgradeFrame = createFrame(this).setScrollFactor(0).setDepth(10);
+
+        this.upgradeTitleRule = createRuleMark(this, this.scale.width / 2, 104)
+            .setScrollFactor(0)
+            .setDepth(11);
+
         this.upgradeTitle = this.add
-            .text(this.scale.width / 2, 150, i18n.t('upgrade.choose'), {
-                ...grimTextStyle(GRIM.text, '36px'),
+            .text(this.scale.width / 2, 150, i18n.t('upgrade.choose').toUpperCase(), {
+                ...grimHeadingStyle(GRIM.text, '36px'),
             })
             .setOrigin(0.5)
             .setScrollFactor(0)
@@ -227,26 +289,62 @@ export class GameScene extends Phaser.Scene {
         this.upgradeCards = choices.map((upgrade, index) => this.createUpgradeCard(upgrade, index));
     }
 
-    private createUpgradeCard(upgrade: Upgrade, index: number): Phaser.GameObjects.Text {
-        const card = this.add
-            .text(
-                330 + index * 310,
-                this.scale.height / 2,
-                `${upgrade.name}\n${i18n.t(`rarity.${upgrade.rarity.id}`)}\n${upgrade.description}`,
-                {
-                    align: 'center',
-                    ...grimTextStyle(GRIM.ink, '20px'),
-                    wordWrap: { width: 220 },
-                },
-            )
-            .setOrigin(0.5)
-            .setFixedSize(250, 170)
-            .setPadding(15)
-            .setBackgroundColor(upgrade.rarity.color)
-            .setScrollFactor(0)
-            .setDepth(11)
-            .setInteractive({ useHandCursor: true })
-            .on(Phaser.Input.Events.POINTER_DOWN, () => this.selectUpgrade(upgrade));
+    private createUpgradeCard(upgrade: Upgrade, index: number): Phaser.GameObjects.Container {
+        const x = 330 + index * 310;
+        const y = this.scale.height / 2;
+        const width = 250;
+        const height = 190;
+        const style = RARITY_STYLES[upgrade.rarity.id] ?? RARITY_STYLES.common;
+
+        const objects: Phaser.GameObjects.GameObject[] = [];
+
+        if (style.glowAlpha) {
+            objects.push(this.add.rectangle(0, 0, width + 24, height + 24, style.borderColor, style.glowAlpha));
+        }
+
+        for (let i = 0; i < style.diamonds; i += 1) {
+            const offset = (i - (style.diamonds - 1) / 2) * 16;
+            objects.push(createDiamond(this, offset, -height / 2 - 14, 7, style.borderColor));
+        }
+
+        objects.push(this.add.rectangle(0, 0, width, height, 0x000000, 0).setStrokeStyle(style.borderWidth, style.borderColor));
+
+        const rarityLabel = i18n.t(`rarity.${upgrade.rarity.id}`).toUpperCase();
+        if (style.chipFillHex) {
+            objects.push(
+                this.add.text(0, -height / 2 + 22, rarityLabel, grimLabelStyle(style.chipTextColor ?? GRIM.text, '12px'))
+                    .setOrigin(0.5)
+                    .setPadding(8, 4)
+                    .setBackgroundColor(style.chipFillHex),
+            );
+        } else {
+            objects.push(
+                this.add.text(0, -height / 2 + 22, rarityLabel, grimLabelStyle(style.labelColor, '12px')).setOrigin(0.5),
+            );
+        }
+
+        objects.push(
+            this.add.text(0, -6, upgrade.name, {
+                ...grimHeadingStyle(GRIM.text, '18px', 1),
+                align: 'center',
+                wordWrap: { width: 220 },
+            }).setOrigin(0.5),
+        );
+        objects.push(
+            this.add.text(0, 48, upgrade.description, {
+                ...grimTextStyle(GRIM.mutedText, '14px'),
+                align: 'center',
+                wordWrap: { width: 210 },
+            }).setOrigin(0.5),
+        );
+
+        const card = this.add.container(x, y, objects);
+        card.setScrollFactor(0).setDepth(11);
+        card.setSize(width, height);
+        card.setInteractive(
+            new Phaser.Geom.Rectangle(0, 0, width, height),
+            Phaser.Geom.Rectangle.Contains,
+        ).on(Phaser.Input.Events.POINTER_DOWN, () => this.selectUpgrade(upgrade));
 
         return card;
     }
@@ -260,6 +358,10 @@ export class GameScene extends Phaser.Scene {
         }
         this.upgradeOverlay?.destroy();
         this.upgradeOverlay = undefined;
+        this.upgradeFrame?.destroy();
+        this.upgradeFrame = undefined;
+        this.upgradeTitleRule?.destroy();
+        this.upgradeTitleRule = undefined;
         this.upgradeTitle?.destroy();
         this.upgradeTitle = undefined;
         this.upgradeCards.forEach((card) => card.destroy());
