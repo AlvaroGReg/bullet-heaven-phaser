@@ -28,6 +28,8 @@ import {
 } from '../ui/grimTheme';
 import { createArena } from '../world/createArena';
 import { createRogueTextures } from '../sprites/rogue';
+import { createEnemyTextures } from '../sprites/enemies';
+import { createWeaponTextures } from '../sprites/weapons';
 
 type RarityStyle = {
     borderColor: number;
@@ -123,6 +125,8 @@ export class GameScene extends Phaser.Scene {
 
     private elapsedGameTime = 0;
 
+    private gameSpeed = 1;
+
     public constructor() {
         super('game');
     }
@@ -135,8 +139,11 @@ export class GameScene extends Phaser.Scene {
         this.pendingUpgradeSelections = 0;
         this.completed = false;
         this.elapsedGameTime = 0;
+        this.setGameSpeed(1);
         createArena(this);
         createRogueTextures(this);
+        createEnemyTextures(this);
+        createWeaponTextures(this);
 
         this.player = createPlayer(this, MAP_WIDTH / 2, MAP_HEIGHT / 2);
         const enemy = createEnemy(this, MAP_WIDTH / 2 - 360, MAP_HEIGHT / 2);
@@ -219,6 +226,10 @@ export class GameScene extends Phaser.Scene {
                 onRestart: this.restartGame,
                 onMainMenu: this.returnToMenu,
                 onTogglePause: this.togglePause,
+                getGameSpeed: () => this.gameSpeed,
+                isInvulnerable: () => this.combat.isInvulnerable,
+                onSetGameSpeed: this.setGameSpeed,
+                onSetInvulnerable: (invulnerable) => this.combat.setInvulnerable(invulnerable),
             },
             metaProgress.currentGold,
             this.hasTouchInput,
@@ -232,9 +243,10 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        this.elapsedGameTime += delta;
-        this.hud.update(delta);
-        this.achievements.update(delta);
+        const scaledDelta = delta * this.gameSpeed;
+        this.elapsedGameTime += scaledDelta;
+        this.hud.update(scaledDelta);
+        this.achievements.update(scaledDelta);
         this.controller.update();
         this.experience.update();
 
@@ -243,7 +255,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.enemySpawner.update(this.elapsedGameTime);
-        this.combat.update(delta);
+        this.combat.update(scaledDelta);
     }
 
     private updateHealth = (health: number, maxHealth: number): void => {
@@ -253,6 +265,13 @@ export class GameScene extends Phaser.Scene {
     private updateExperience = (level: number, experience: number, requiredExperience: number): void => {
         this.hud.setExperience(level, experience, requiredExperience);
     }
+
+    private setGameSpeed = (speed: number): void => {
+        this.gameSpeed = Phaser.Math.Clamp(speed, 1, 5);
+        this.time.timeScale = this.gameSpeed;
+        // Arcade Physics uses an inverse time scale: 0.5 simulates at double speed.
+        this.physics.world.timeScale = 1 / this.gameSpeed;
+    };
 
     private queueUpgradeSelection = (): void => {
         if (this.upgradeSelectionActive) {

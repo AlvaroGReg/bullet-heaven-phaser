@@ -34,6 +34,20 @@ export type AchievementDefinition = {
     weapon?: WeaponKind;
 };
 
+export const JOURNAL_ENEMY_MILESTONES = [1, 10, 50, 100] as const;
+export const JOURNAL_WEAPON_MILESTONES = [5, 25, 100] as const;
+
+const JOURNAL_ENEMIES: readonly EnemyKind[] = ['normal', 'fast', 'heavy', 'elite', 'boss', 'ranged'];
+const JOURNAL_WEAPONS: readonly WeaponKind[] = ['dagger', 'bow', 'crossbow', 'staff', 'cannon'];
+
+export function getJournalEnemyAchievementId(enemy: EnemyKind, target: number): string {
+    return `journal-enemy-${enemy}-${target}`;
+}
+
+export function getJournalWeaponAchievementId(weapon: WeaponKind, target: number): string {
+    return `journal-weapon-${weapon}-${target}`;
+}
+
 export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     { id: 'survive-run-5', metric: 'survivalRun', target: 5 * 60 },
     { id: 'survive-run-15', metric: 'survivalRun', target: 15 * 60 },
@@ -53,11 +67,23 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     { id: 'kills-elite-100', metric: 'killsByEnemy', enemyKind: 'elite', target: 100 },
     { id: 'kills-boss-10', metric: 'killsByEnemy', enemyKind: 'boss', target: 10 },
     { id: 'kills-ranged-250', metric: 'killsByEnemy', enemyKind: 'ranged', target: 250 },
+    ...JOURNAL_ENEMIES.flatMap((enemyKind) => JOURNAL_ENEMY_MILESTONES.map((target) => ({
+        id: getJournalEnemyAchievementId(enemyKind, target),
+        metric: 'killsByEnemy' as const,
+        enemyKind,
+        target,
+    }))),
     { id: 'kills-dagger-200', metric: 'killsByWeapon', target: 200, weapon: 'dagger' },
     { id: 'kills-bow-500', metric: 'killsByWeapon', target: 500, weapon: 'bow' },
     { id: 'kills-crossbow-500', metric: 'killsByWeapon', target: 500, weapon: 'crossbow' },
     { id: 'kills-staff-500', metric: 'killsByWeapon', target: 500, weapon: 'staff' },
     { id: 'kills-cannon-250', metric: 'killsByWeapon', target: 250, weapon: 'cannon' },
+    ...JOURNAL_WEAPONS.flatMap((weapon) => JOURNAL_WEAPON_MILESTONES.map((target) => ({
+        id: getJournalWeaponAchievementId(weapon, target),
+        metric: 'killsByWeapon' as const,
+        target,
+        weapon,
+    }))),
     { id: 'damage-taken-100', metric: 'damageTaken', target: 100 },
     { id: 'damage-taken-1000', metric: 'damageTaken', target: 1000 },
     { id: 'damage-taken-10000', metric: 'damageTaken', target: 10000 },

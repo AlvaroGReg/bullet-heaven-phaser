@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { isDeveloperRoute } from '../game/devMode';
 import { i18n } from '../i18n';
 import type { Locale } from '../i18n';
 import {
@@ -10,15 +11,21 @@ import {
     grimTextStyle,
 } from './grimTheme';
 import type { ButtonVariant } from './grimTheme';
+import { renderJournal } from './Journal';
+import type { JournalTab } from './Journal';
 
 const CONTROLS_DURATION = 10_000;
 const BAR_WIDTH = 260;
 const BAR_HEIGHT = 24;
 
 type GameHudCallbacks = {
+    getGameSpeed: () => number;
+    isInvulnerable: () => boolean;
     onMainMenu: () => void;
     onResume: () => void;
     onRestart: () => void;
+    onSetGameSpeed: (speed: number) => void;
+    onSetInvulnerable: (invulnerable: boolean) => void;
     onTogglePause: () => void;
 };
 
@@ -41,9 +48,11 @@ export class GameHud {
 
     private menuObjects: Phaser.GameObjects.GameObject[] = [];
 
-    private menuState: 'gameOver' | 'pause' | 'restartConfirmation' | 'victory' | undefined;
+    private menuState: 'gameOver' | 'journal' | 'pause' | 'restartConfirmation' | 'victory' | undefined;
 
     private languageMenuOpen = false;
+
+    private journalTab: JournalTab = 'weapons';
 
     private currentLevel: number;
 
@@ -224,10 +233,33 @@ export class GameHud {
         this.addMenuBackground();
         this.addMenuTitle(i18n.t('pause.title'), 250);
         this.addMenuButton(i18n.t('pause.continue'), 330, this.callbacks.onResume, 'primary');
-        this.addMenuButton(i18n.t('pause.restart'), 400, this.showRestartConfirmation, 'secondary');
-        this.addMenuButton(i18n.t('menu.main'), 470, this.callbacks.onMainMenu, 'secondary');
+        this.addMenuButton(i18n.t('journal.title'), 400, this.showJournal, 'secondary');
+        this.addMenuButton(i18n.t('pause.restart'), 470, this.showRestartConfirmation, 'secondary');
+        this.addMenuButton(i18n.t('menu.main'), 540, this.callbacks.onMainMenu, 'secondary');
         this.addLanguageMenu();
     }
+
+    private showJournal = (): void => {
+        this.clearMenu();
+        this.menuState = 'journal';
+        this.addMenuBackground();
+        renderJournal(this.scene, this.journalTab, this.addMenuObject, {
+            onClose: () => this.showPauseMenu(),
+            onTabChange: (tab) => {
+                this.journalTab = tab;
+                this.showJournal();
+            },
+            developerControls: isDeveloperRoute ? {
+                gameSpeed: this.callbacks.getGameSpeed(),
+                invulnerable: this.callbacks.isInvulnerable(),
+                onGameSpeedChange: this.callbacks.onSetGameSpeed,
+                onInvulnerabilityChange: (invulnerable) => {
+                    this.callbacks.onSetInvulnerable(invulnerable);
+                    this.showJournal();
+                },
+            } : undefined,
+        });
+    };
 
     private showRestartConfirmation = (): void => {
         this.clearMenu();
@@ -344,6 +376,8 @@ export class GameHud {
             this.showVictory();
         } else if (this.menuState === 'pause') {
             this.showPauseMenu();
+        } else if (this.menuState === 'journal') {
+            this.showJournal();
         } else if (this.menuState === 'restartConfirmation') {
             this.showRestartConfirmation();
         }
@@ -352,6 +386,16 @@ export class GameHud {
     private destroy(): void {
         this.removeLanguageListener();
     }
+
+    private addMenuObject = (gameObject: Phaser.GameObjects.GameObject): void => {
+        const overlayObject = gameObject as Phaser.GameObjects.GameObject & {
+            setDepth: (value: number) => Phaser.GameObjects.GameObject;
+            setScrollFactor: (x: number) => Phaser.GameObjects.GameObject;
+        };
+        overlayObject.setScrollFactor(0);
+        overlayObject.setDepth(21);
+        this.menuObjects.push(gameObject);
+    };
 
     private formatTime(elapsed: number): string {
         const totalSeconds = Math.floor(elapsed / 1000);

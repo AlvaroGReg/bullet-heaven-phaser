@@ -6,6 +6,10 @@ import type { MetaUpgrade, MetaUpgradeCategory } from '../game/MetaProgress';
 import { i18n } from '../i18n';
 import type { Locale } from '../i18n';
 import { createRogueTextures, DAGGER_TEXTURE, ROGUE_TEXTURE } from '../sprites/rogue';
+import { createEnemyTextures } from '../sprites/enemies';
+import { createWeaponTextures } from '../sprites/weapons';
+import { renderJournal } from '../ui/Journal';
+import type { JournalTab } from '../ui/Journal';
 import {
     createButton,
     createFrame,
@@ -19,7 +23,7 @@ import {
 } from '../ui/grimTheme';
 import type { ButtonVariant } from '../ui/grimTheme';
 
-type MenuView = 'achievements' | 'main' | 'characters' | 'meta' | 'patchNotes';
+type MenuView = 'achievements' | 'main' | 'characters' | 'journal' | 'meta' | 'patchNotes';
 
 export class MenuScene extends Phaser.Scene {
     private objects: Phaser.GameObjects.GameObject[] = [];
@@ -32,6 +36,8 @@ export class MenuScene extends Phaser.Scene {
 
     private metaCategory: MetaUpgradeCategory = 'baseStats';
 
+    private journalTab: JournalTab = 'weapons';
+
     private removeLanguageListener?: () => void;
 
     public constructor() {
@@ -40,6 +46,8 @@ export class MenuScene extends Phaser.Scene {
 
     public create(): void {
         createRogueTextures(this);
+        createEnemyTextures(this);
+        createWeaponTextures(this);
         this.removeLanguageListener = i18n.onChange(this.render);
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.destroy, this);
         this.render();
@@ -63,6 +71,8 @@ export class MenuScene extends Phaser.Scene {
             this.renderCharacterSelection();
         } else if (this.view === 'meta') {
             this.renderMetaProgression();
+        } else if (this.view === 'journal') {
+            this.renderJournal();
         } else if (this.view === 'patchNotes') {
             this.renderPatchNotes();
         } else {
@@ -89,6 +99,10 @@ export class MenuScene extends Phaser.Scene {
             }],
             [i18n.t('achievement.title'), () => {
                 this.view = 'achievements';
+                this.render();
+            }],
+            [i18n.t('journal.title'), () => {
+                this.view = 'journal';
                 this.render();
             }],
             [i18n.t('menu.patchNotes'), () => {
@@ -145,6 +159,19 @@ export class MenuScene extends Phaser.Scene {
             this.view = 'main';
             this.render();
         }, 'secondary');
+    }
+
+    private renderJournal(): void {
+        renderJournal(this, this.journalTab, (gameObject) => this.addObject(gameObject), {
+            onClose: () => {
+                this.view = 'main';
+                this.render();
+            },
+            onTabChange: (tab) => {
+                this.journalTab = tab;
+                this.render();
+            },
+        });
     }
 
     private renderMetaUpgrade(upgrade: MetaUpgrade, x: number, y: number): void {

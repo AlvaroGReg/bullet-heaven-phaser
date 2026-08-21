@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { Enemy } from '../entities/createEnemy';
 import type { Player } from '../entities/createPlayer';
 import { DAGGER_TEXTURE } from '../sprites/rogue';
+import { WEAPON_TEXTURES } from '../sprites/weapons';
 import { ENEMY_DAMAGE_COOLDOWN } from '../game/constants';
 import type { PlayerStats } from '../game/PlayerStats';
 import { WEAPON_DEFINITIONS } from './WeaponSystem';
@@ -13,7 +14,7 @@ type Projectile = (Phaser.GameObjects.Arc | Phaser.Physics.Arcade.Sprite) & {
     damage: number;
     piercing: number;
     weapon: WeaponKind;
-    hitEnemies: Set<Phaser.GameObjects.Arc>;
+    hitEnemies: Set<Enemy>;
 };
 
 type EnemyProjectile = Phaser.GameObjects.Arc & {
@@ -42,6 +43,10 @@ export class CombatSystem {
     private gameOver = false;
 
     private autoAimEnabled = false;
+
+    private invulnerable = false;
+
+    private elapsedGameTime = 0;
 
     private handleProjectileHit: Phaser.Types.Physics.Arcade.ArcadePhysicsCallback = (
         firstObject,
@@ -138,7 +143,12 @@ export class CombatSystem {
         return this.gameOver;
     }
 
+    public get isInvulnerable(): boolean {
+        return this.invulnerable;
+    }
+
     public update(delta: number): void {
+        this.elapsedGameTime += delta;
         this.regeneratePlayer(delta);
 
         for (const gameObject of this.enemies.getChildren()) {
@@ -149,7 +159,7 @@ export class CombatSystem {
             }
         }
 
-        if (this.autoAimEnabled && this.weapons.hasReadyWeapon(this.scene.time.now)) {
+        if (this.autoAimEnabled && this.weapons.hasReadyWeapon(this.elapsedGameTime)) {
             const target = this.updateAutoAim();
 
             if (target) {
@@ -187,11 +197,15 @@ export class CombatSystem {
         this.callbacks.onPlayerHealthChanged(this.playerHealth, this.stats.maxHealth);
     }
 
+    public setInvulnerable(invulnerable: boolean): void {
+        this.invulnerable = invulnerable;
+    }
+
     private fireWeapon(weapon: keyof typeof WEAPON_DEFINITIONS, direction: Phaser.Math.Vector2): void {
         const definition = WEAPON_DEFINITIONS[weapon];
         const attackInterval = this.getAttackInterval(weapon);
 
-        if (!this.weapons.canFire(weapon, this.scene.time.now, attackInterval)) {
+        if (!this.weapons.canFire(weapon, this.elapsedGameTime, attackInterval)) {
             return;
         }
 
@@ -213,17 +227,10 @@ export class CombatSystem {
     ): void {
         const projectile = weapon === 'dagger'
             ? this.scene.physics.add.sprite(this.player.x + offset.x, this.player.y + offset.y, DAGGER_TEXTURE) as Projectile
-            : this.scene.add.circle(
-                this.player.x,
-                this.player.y,
-                definition.projectileRadius,
-                definition.color,
-            ) as Projectile;
+            : this.scene.physics.add.sprite(this.player.x, this.player.y, WEAPON_TEXTURES[weapon]) as Projectile;
 
-        if (weapon === 'dagger') {
+        if (weapon === 'dagger' || weapon === 'bow' || weapon === 'crossbow') {
             projectile.setRotation(direction.angle() + Math.PI / 2);
-        } else {
-            this.scene.physics.add.existing(projectile);
         }
 
         projectile.areaRadius = definition.areaRadius;
@@ -288,9 +295,9 @@ export class CombatSystem {
                 body.setVelocity(0);
             }
 
-            if (distance <= enemy.ranged.attackRange && this.scene.time.now >= enemy.nextAttackAt) {
+            if (distance <= enemy.ranged.attackRange && this.elapsedGameTime >= enemy.nextAttackAt) {
                 this.fireEnemyProjectile(enemy);
-                enemy.nextAttackAt = this.scene.time.now + enemy.ranged.attackInterval;
+                enemy.nextAttackAt = this.elapsedGameTime + enemy.ranged.attackInterval;
             }
 
             return;
@@ -360,11 +367,11 @@ export class CombatSystem {
     }
 
     private damagePlayer(damage: number): void {
-        if (this.gameOver || this.scene.time.now < this.nextPlayerDamageAt) {
+        if (this.gameOver || this.invulnerable || this.elapsedGameTime < this.nextPlayerDamageAt) {
             return;
         }
 
-        this.nextPlayerDamageAt = this.scene.time.now + ENEMY_DAMAGE_COOLDOWN;
+        this.nextPlayerDamageAt = this.elapsedGameTime + ENEMY_DAMAGE_COOLDOWN;
         const lostHealth = Math.min(damage, this.playerHealth);
         this.playerHealth -= damage;
         this.callbacks.onPlayerDamaged(lostHealth);
