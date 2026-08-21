@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ACHIEVEMENTS } from '../game/Achievements';
 import type { AchievementDefinition } from '../game/Achievements';
 import { META_UPGRADES, metaProgress } from '../game/MetaProgress';
+import type { MetaUpgrade, MetaUpgradeCategory } from '../game/MetaProgress';
 import { i18n } from '../i18n';
 import type { Locale } from '../i18n';
 import { createRogueTextures, DAGGER_TEXTURE, ROGUE_TEXTURE } from '../sprites/rogue';
@@ -28,6 +29,8 @@ export class MenuScene extends Phaser.Scene {
     private languageMenuOpen = false;
 
     private achievementPage = 0;
+
+    private metaCategory: MetaUpgradeCategory = 'baseStats';
 
     private removeLanguageListener?: () => void;
 
@@ -113,29 +116,69 @@ export class MenuScene extends Phaser.Scene {
     }
 
     private renderMetaProgression(): void {
-        this.addTitle(i18n.t('meta.title'), 75);
-        this.addLabel(i18n.t('menu.gold', { gold: metaProgress.currentGold }), 120, GRIM.accentText);
-        this.addLabel(i18n.t('meta.comingSoon'), 150, GRIM.mutedText);
+        this.addTitle(i18n.t('meta.title'), 65);
+        this.addLabel(i18n.t('menu.gold', { gold: metaProgress.currentGold }), 105, GRIM.accentText);
 
-        const columns = ['baseStats', 'weapons', 'ingameUpgrades'] as const;
-        columns.forEach((category, index) => {
-            const x = 330 + index * 310;
-            const upgrades = META_UPGRADES.filter((upgrade) => upgrade.category === category);
-            const text = [i18n.t(`meta.category.${category}`), ...upgrades.map((upgrade) => (
-                `${i18n.t(upgrade.nameKey)}\n${i18n.t(upgrade.descriptionKey)}\n${i18n.t('meta.requires', { achievement: i18n.t(upgrade.achievementKey), gold: upgrade.goldCost })}`
-            ))].join('\n\n');
-            this.addObject(createPanelBorder(this, x, 330, 280, 315));
-            this.addObject(this.add.text(x, 330, text, {
-                align: 'center',
-                ...grimTextStyle(GRIM.text, '16px'),
-                wordWrap: { width: 260 },
-            }).setOrigin(0.5).setFixedSize(280, 315).setPadding(16));
+        (['baseStats', 'weapons'] as const).forEach((category, index) => {
+            const tab = createButton(
+                this,
+                this.scale.width / 2 + (index === 0 ? -130 : 130),
+                160,
+                i18n.t(`meta.category.${category}`),
+                category === this.metaCategory ? 'primary' : 'secondary',
+                '18px',
+            );
+            tab.on(Phaser.Input.Events.POINTER_DOWN, () => {
+                this.metaCategory = category;
+                this.render();
+            });
+            this.addObject(tab);
+        });
+
+        META_UPGRADES.filter((upgrade) => upgrade.category === this.metaCategory).forEach((upgrade, index) => {
+            const x = this.scale.width / 2 + (index % 2 === 0 ? -245 : 245);
+            const y = 290 + Math.floor(index / 2) * 215;
+            this.renderMetaUpgrade(upgrade, x, y);
         });
 
         this.addButton(i18n.t('menu.back'), 610, () => {
             this.view = 'main';
             this.render();
         }, 'secondary');
+    }
+
+    private renderMetaUpgrade(upgrade: MetaUpgrade, x: number, y: number): void {
+        const level = metaProgress.getLevel(upgrade);
+        const cost = metaProgress.getNextCost(upgrade);
+        const maxed = cost === undefined;
+        const canBuy = cost !== undefined && metaProgress.currentGold >= cost;
+        const progress = upgrade.goldCosts.length === 1
+            ? (maxed ? i18n.t('meta.purchased') : i18n.t('meta.singlePurchase'))
+            : i18n.t('meta.level', { current: level, total: upgrade.goldCosts.length });
+
+        this.addObject(createPanelBorder(this, x, y, 450, 180));
+        this.addObject(this.add.text(x, y - 58, i18n.t(upgrade.nameKey), {
+            ...grimHeadingStyle(GRIM.text, '20px', 1),
+        }).setOrigin(0.5));
+        this.addObject(this.add.text(x, y - 22, i18n.t(upgrade.descriptionKey), {
+            align: 'center',
+            ...grimTextStyle(GRIM.mutedText, '15px'),
+            wordWrap: { width: 390 },
+        }).setOrigin(0.5));
+        this.addObject(this.add.text(x, y + 18, progress, grimTextStyle(GRIM.accentText, '15px')).setOrigin(0.5));
+
+        const label = maxed
+            ? i18n.t('meta.maxed')
+            : i18n.t('meta.buy', { gold: cost! });
+        const button = createButton(this, x, y + 57, label, canBuy ? 'primary' : 'secondary', '16px');
+        if (canBuy) {
+            button.on(Phaser.Input.Events.POINTER_DOWN, () => {
+                if (metaProgress.buy(upgrade)) {
+                    this.render();
+                }
+            });
+        }
+        this.addObject(button);
     }
 
     private renderPatchNotes(): void {

@@ -60,4 +60,4 @@ OpenCode loads `.agents/AGENTS.md`, skills, and roles through `opencode.json`. R
 
 ## Intentional Limits
 
-Initially, ECS, object pooling, persistence, meta-progression, multiplayer, and optimizations for thousands of entities will not be implemented. They will be added only when learning goals or a real prototype limitation require them.
+ECS, object pooling, multiplayer, and optimizations for thousands of entities will not be implemented until learning goals or a real prototype limitation require them. Meta-progression is limited to local browser storage for gold purchases; achievement-based unlocks are tracked separately and will be integrated later.

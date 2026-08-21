@@ -71,6 +71,8 @@ export class WeaponSystem {
 
     private weaponSlots = 5;
 
+    public constructor(private readonly unlockedWeapons: readonly WeaponKind[]) {}
+
     public get weapons(): readonly WeaponKind[] {
         return this.equippedWeapons;
     }
@@ -81,7 +83,7 @@ export class WeaponSystem {
 
     public get availableWeapons(): WeaponKind[] {
         return (Object.keys(WEAPON_DEFINITIONS) as WeaponKind[]).filter(
-            (weapon) => !this.equippedWeapons.includes(weapon),
+            (weapon) => this.unlockedWeapons.includes(weapon) && !this.equippedWeapons.includes(weapon),
         );
     }
 

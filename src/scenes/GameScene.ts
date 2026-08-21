@@ -144,8 +144,9 @@ export class GameScene extends Phaser.Scene {
         this.enemies.add(enemy);
 
         this.stats = new PlayerStats();
+        metaProgress.applyStatBonuses(this.stats);
         this.achievements = new AchievementSystem();
-        this.weapons = new WeaponSystem();
+        this.weapons = new WeaponSystem(metaProgress.getUnlockedWeapons());
         this.experience = new ExperienceSystem(this, this.player, this.stats, {
             onExperienceChanged: (level, experience, requiredExperience) => {
                 this.achievements.recordLevel(level);
